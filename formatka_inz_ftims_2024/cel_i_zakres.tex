@@ -1,0 +1,53 @@
+\section*{Cel i zakres pracy}
+\addcontentsline{toc}{section}{Cel i zakres pracy}
+\label{chap:cel}
+
+\subsection*{Uzasadnienie podjęcia tematu}
+Przeglądarki agentowe, czyli narzędzia wykorzystujące duże modele językowe do samodzielnego poruszania się po stronach internetowych i~wykonywania na nich operacji w~imieniu użytkownika, w~ciągu ostatnich dwóch lat przeszły z~etapu prototypów badawczych do etapu produktów udostępnianych szerokiemu gronu odbiorców. Ich naturalnym obszarem zastosowań jest automatyzacja powtarzalnych czynności biurowych, takich jak uzupełnianie formularzy, wyszukiwanie rekordów czy zmiana statusów w~panelach administracyjnych. Skuteczność tych narzędzi pozostaje jednak ograniczona, a~przyczyną niepowodzeń jest nie tylko niedoskonałość modeli, lecz również budowa samych aplikacji, projektowanych wyłącznie z~myślą o~obsłudze przez człowieka.
+
+Istniejące zestawy testów porównawczych i~środowiska badawcze, omówione w~rozdziale~\ref{chap:pierwszy}, służą przede wszystkim do porównywania agentów i~modeli na niezmiennym zbiorze stron. Brakuje natomiast narzędzi pozwalających ocenić drugą stronę interakcji -- aplikację internetową -- oraz zmierzyć, w~jakim stopniu konkretne decyzje dotyczące budowy interfejsu wpływają na powodzenie zadań realizowanych przez agenta. Wypełnienie tej luki ma znaczenie praktyczne: twórcy aplikacji biurowych nie dysponują obecnie empirycznie zweryfikowanymi zaleceniami, które pozwalałyby przygotować interfejs do obsługi przez agentów, w~sposób analogiczny do wytycznych WCAG dotyczących dostępności dla osób z~niepełnosprawnościami.
+
+\subsection*{Cel pracy}
+Celem pracy jest \textbf{zaprojektowanie oraz implementacja środowiska badawczego i~zestawu testów porównawczych umożliwiających rzetelny pomiar skuteczności agenta przeglądarkowego Google Antigravity w~zadaniach realizowanych w~otwartoźródłowych aplikacjach biurowych}, z~obiektywną weryfikacją poprawności wykonania zadań na podstawie stanu danych po stronie serwera.
+
+Opracowane środowisko posłuży następnie do zbadania, w~jakim stopniu modyfikacje struktury i~semantyki interfejsu aplikacji -- przy niezmienionym agencie, danych i~treści poleceń -- wpływają na poprawność realizacji zadań, oraz do sformułowania zaleceń dotyczących projektowania aplikacji internetowych przyjaznych agentom.
+
+Cel główny jest niezależny od wielkości różnic, jakie zostaną zaobserwowane pomiędzy wariantami interfejsu: rzetelne środowisko pomiarowe stanowi wartość samą w~sobie, a~wynik eksperymentu -- zarówno potwierdzający, jak i~obalający postawione hipotezy -- jest wnioskiem z~badania, a~nie warunkiem jego powodzenia.
+
+\subsection*{Cele szczegółowe}
+Realizacja celu głównego wymaga osiągnięcia następujących celów szczegółowych:
+\begin{enumerate}[label=C\arabic*.]
+    \item Wybór, uruchomienie w~kontrolowanym środowisku lokalnym oraz przystosowanie co najmniej jednej otwartoźródłowej aplikacji biurowej typu panel administracyjny, z~zachowaniem jej oryginalnego interfejsu jako wariantu bazowego.
+    \item Opracowanie co najmniej jednego wariantu interfejsu przyjaznego agentom, korzystającego z~tej samej logiki i~tych samych danych co wariant bazowy.
+    \item Opracowanie zestawu scenariuszy testowych o~zróżnicowanym poziomie trudności, odzwierciedlających typowe operacje biurowe.
+    \item Implementacja mechanizmu weryfikacji stanu danych, sprawdzającego zarówno wystąpienie oczekiwanych zmian, jak i~brak niezamierzonych skutków ubocznych.
+    \item Opracowanie powtarzalnej procedury badawczej dla agenta Google Antigravity, obejmującej rejestrację konfiguracji agenta, przebiegu zadania i~jego wyniku.
+    \item Przeprowadzenie eksperymentów porównujących skuteczność agenta w~poszczególnych wariantach interfejsu i~przy użyciu różnych modeli językowych.
+    \item Analiza błędów agenta oraz sformułowanie empirycznie uzasadnionych zaleceń projektowych.
+\end{enumerate}
+
+\subsection*{Kryteria oceny}
+Ocena realizacji celu opiera się na wielkościach mierzalnych, wyznaczanych automatycznie na podstawie stanu danych, a~nie na deklaracjach agenta ani na subiektywnej ocenie badacza. Podstawową miarą jest wskaźnik skuteczności realizacji zadań (TSR), czyli odsetek przebiegów zakończonych poprawną zmianą stanu danych bez skutków ubocznych, a~wpływ modyfikacji interfejsu wyrażany jest jako różnica tego wskaźnika pomiędzy wariantami. Miary uzupełniające obejmują czas wykonania zadania, liczbę kroków agenta, odsetek niezamierzonych skutków ubocznych, odsetek fałszywych deklaracji sukcesu, liczbę interwencji badacza oraz stabilność wyników przy wielokrotnym powtórzeniu tego samego scenariusza. Szczegółowe definicje miar przedstawiono w~podrozdziale~\ref{sec:procedura}.
+
+\subsection*{Zakres pracy}
+Zakres pracy obejmuje:
+\begin{enumerate}
+    \item \textbf{Przegląd literatury i~analizę istniejących rozwiązań} -- omówienie współczesnych agentów przeglądarkowych opartych na dużych modelach językowych i~modelach multimodalnych, sposobów reprezentacji strony internetowej wykorzystywanych przez agentów (drzewo DOM, drzewo dostępności, zrzuty ekranu), związku dostępności cyfrowej z~dostępnością dla agentów oraz krytyczną analizę istniejących zestawów testów porównawczych i~metod weryfikacji poprawności wykonania zadań (rozdział~\ref{chap:pierwszy}).
+    \item \textbf{Projekt środowiska badawczego} -- sformułowanie wymagań, architektury, kryteriów wyboru aplikacji, zasad konstruowania wariantów interfejsu, formatu scenariuszy, mechanizmu weryfikacji stanu, procedury badawczej, miar i~hipotez (rozdział~\ref{chap:drugi}).
+    \item \textbf{Wybór, adaptację i~modyfikację aplikacji biurowych} -- uruchomienie wybranych otwartoźródłowych paneli administracyjnych z~lokalną warstwą danych oraz implementację wariantów interfejsu różniących się m.in.~semantyką elementów HTML, nazewnictwem elementów interaktywnych, sposobem etykietowania pól formularzy, użyciem atrybutów ARIA oraz konstrukcją złożonych komponentów.
+    \item \textbf{Przygotowanie scenariuszy testowych i~mechanizmu weryfikacji} -- opracowanie zadań na trzech poziomach trudności (operacje elementarne, złożone oraz wieloetapowe i~warunkowe) wraz z~warunkami poprawności i~listą dozwolonych zmian stanu.
+    \item \textbf{Integrację z~agentem przeglądarkowym Google Antigravity} -- konfigurację agenta wywoływanego poleceniem \texttt{/browser}, przygotowanie procedury uruchamiania przebiegów oraz rejestracji ich wyników, z~możliwie wysokim stopniem automatyzacji.
+    \item \textbf{Przeprowadzenie eksperymentów i~analizę wyników} -- wielokrotne wykonanie scenariuszy w~wariancie bazowym i~w~wariantach zmodyfikowanych, przy użyciu co najmniej dwóch modeli językowych o~różnych możliwościach, klasyfikację błędów agenta oraz ocenę istotności statystycznej zaobserwowanych różnic.
+    \item \textbf{Opracowanie zaleceń projektowych i~wniosków} -- sformułowanie zestawu zaleceń dotyczących projektowania interfejsów przyjaznych agentom, odniesienie ich do kryteriów WCAG, wskazanie ograniczeń zastosowanego podejścia oraz kierunków dalszych badań.
+\end{enumerate}
+
+\subsection*{Ograniczenia zakresu}
+W~celu zachowania spójności i~wykonalności pracy z~jej zakresu świadomie wyłączono następujące zagadnienia:
+\begin{itemize}
+    \item budowę własnego agenta przeglądarkowego, w~tym potoku przetwarzania złożonego z~narzędzia sterującego przeglądarką, reprezentacji strony i~modelu językowego -- badany jest wyłącznie gotowy agent dostępny w~środowisku Google Antigravity, traktowany jako czarna skrzynka;
+    \item porównywanie różnych przeglądarek agentowych lub produktów komercyjnych -- jedyną zmienianą cechą po stronie agenta jest wykorzystywany model językowy;
+    \item tworzenie aplikacji biurowych od podstaw -- wykorzystywane są istniejące projekty otwartoźródłowe, co zapewnia realizm interfejsu;
+    \item trenowanie i~dostrajanie modeli językowych oraz budowę własnych systemów rozpoznawania obrazu;
+    \item badanie stron dostępnych publicznie w~sieci Internet, których stanu nie można kontrolować;
+    \item opracowanie formalnego standardu o~skali porównywalnej z~WCAG -- formułowane zalecenia mają charakter praktyczny i~ograniczają się do czynników zbadanych w~eksperymentach.
+\end{itemize}

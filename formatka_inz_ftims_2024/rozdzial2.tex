@@ -1,0 +1,392 @@
+\section{Projekt środowiska badawczego}
+\label{chap:drugi}
+Rozdział przedstawia projekt środowiska badawczego służącego do pomiaru skuteczności agenta przeglądarkowego Google Antigravity w~zadaniach realizowanych w~aplikacjach biurowych. Omówiono w~nim założenia projektowe wynikające z~analizy literatury, wymagania, architekturę systemu, kryteria wyboru badanych aplikacji, sposób konstruowania wariantów interfejsu, format scenariuszy testowych, mechanizm weryfikacji stanu oraz procedurę badawczą wraz z~metrykami i~hipotezami. Opis implementacji poszczególnych modułów zostanie przedstawiony w~dalszej części pracy.
+
+% =====================================================================
+\subsection{Założenia projektowe na tle istniejących rozwiązań}
+\label{sec:zalozenia}
+Podstawowym założeniem projektu jest zmiana perspektywy w~stosunku do rozwiązań omówionych w~rozdziale~\ref{chap:pierwszy}. Typowe podejście polega na ulepszaniu agenta tak, aby poradził sobie z~istniejącą stroną; w~niniejszej pracy agent pozostaje niezmienny, a~zmienną eksperymentu stanowi aplikacja. Pytanie badawcze brzmi zatem: \emph{w~jaki sposób zmienić aplikację, aby istniejący agent wykonywał w~niej zadania skuteczniej i~bardziej niezawodnie?}
+
+Z~tego założenia wynikają trzy decyzje o~charakterze ograniczającym. Po pierwsze, w~pracy nie jest budowany własny agent przeglądarkowy -- wykorzystywany jest gotowy agent dostępny w~środowisku Google Antigravity, traktowany jako czarna skrzynka. Po drugie, nie są tworzone od podstaw własne aplikacje testowe -- wykorzystywane są istniejące, otwartoźródłowe panele administracyjne, co zapewnia realizm interfejsu i~ogranicza ryzyko nieświadomego dopasowania aplikacji do agenta. Po trzecie, praca nie ma na celu porównywania różnych przeglądarek agentowych ani trenowania modeli językowych.
+
+Projekt czerpie jednocześnie z~rozwiązań istniejących, adaptując ich sprawdzone elementy do nowego celu. Powiązanie inspiracji z~literatury z~decyzjami projektowymi przedstawiono w~tabeli~\ref{tab:inspiracje}.
+
+\begin{table}[H]
+\centering
+\caption{Elementy istniejących rozwiązań wykorzystane w~projekcie (opracowanie własne)}
+\label{tab:inspiracje}
+\footnotesize
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Źródło} & \textbf{Przejęty element} & \textbf{Adaptacja w~projekcie} \\
+\midrule
+WebArena \citep{zhou2024webarena} & realistyczne aplikacje uruchamiane lokalnie; weryfikacja stanu po zakończeniu zadania & aplikacje biurowe typu panel administracyjny z~lokalną warstwą danych; weryfikacja rozszerzona o~kontrolę skutków ubocznych \\
+\addlinespace
+WorkArena \citep{drouin2024workarena} & zadania z~dziedziny pracy biurowej (listy, formularze, zmiany statusów) & scenariusze obejmujące typowe operacje biurowe w~systemach otwartoźródłowych, które można modyfikować \\
+\addlinespace
+WebSuite \citep{li2024websuite} & powiązanie niepowodzeń agenta z~konkretnymi typami komponentów & klasyfikacja błędów agenta i~przypisanie ich do elementów interfejsu; warianty komponentów jako zmienna eksperymentu \\
+\addlinespace
+BrowseComp-Plus \citep{chen2025browsecompplus} & kontrola środowiska w~celu oddzielenia wpływu poszczególnych czynników & identyczne dane początkowe i~polecenia dla wszystkich wariantów; jedyną zmienną jest interfejs \\
+\addlinespace
+WCAG, WAI-ARIA \citep{w3c2023wcag22, w3c2023aria12} & kryteria nazwy, roli, wartości, relacji i~komunikatów o~stanie & źródło hipotez dotyczących modyfikacji interfejsu i~punkt odniesienia dla formułowanych zaleceń \\
+\addlinespace
+AWI \citep{lu2025awi} & postulat dostosowania interfejsu do agentów & empiryczna weryfikacja postulatu w~ramach istniejących technologii (HTML, ARIA), bez zmiany agenta \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\subsection{Wymagania}
+\label{sec:wymagania}
+Na podstawie celu pracy oraz wniosków z~analizy literatury sformułowano wymagania funkcjonalne (WF) i~niefunkcjonalne (WN) stawiane środowisku badawczemu.
+
+\textbf{Wymagania funkcjonalne:}
+\begin{itemize}
+    \item[WF-01] Środowisko umożliwia uruchomienie co najmniej jednej otwartoźródłowej aplikacji biurowej w~co najmniej dwóch wariantach interfejsu, korzystających z~tej samej logiki i~tych samych danych.
+    \item[WF-02] Środowisko umożliwia przywrócenie stanu danych aplikacji do jednoznacznie określonego stanu początkowego przed każdym przebiegiem zadania.
+    \item[WF-03] Scenariusze testowe są definiowane w~jednolitym, czytelnym formacie zawierającym polecenie dla agenta, poziom trudności, stan początkowy oraz warunki poprawności.
+    \item[WF-04] Po zakończeniu przebiegu środowisko automatycznie sprawdza stan danych i~określa, czy zadanie zostało wykonane poprawnie oraz czy nie wystąpiły niezamierzone zmiany.
+    \item[WF-05] Wynik każdego przebiegu jest zapisywany wraz z~informacją o~scenariuszu, wariancie interfejsu, konfiguracji agenta (w~tym użytym modelu), czasie trwania oraz szczegółowym wynikiem weryfikacji.
+    \item[WF-06] Środowisko umożliwia zestawienie wyników w~przekroju: konfiguracja agenta $\times$ scenariusz $\times$ wariant interfejsu.
+\end{itemize}
+
+\textbf{Wymagania niefunkcjonalne:}
+\begin{itemize}
+    \item[WN-01] Powtarzalność -- uruchomienie środowiska na innym komputerze prowadzi do identycznego stanu początkowego aplikacji i~danych.
+    \item[WN-02] Izolacja zmiennej eksperymentu -- warianty interfejsu różnią się wyłącznie badanymi właściwościami; dane, logika i~polecenia pozostają identyczne.
+    \item[WN-03] Nieujawnianie wariantu -- agent nie może na podstawie adresu, tytułu strony ani treści polecenia ustalić, który wariant interfejsu obsługuje.
+    \item[WN-04] Obiektywność -- ocena poprawności nie zależy od deklaracji agenta ani od subiektywnej oceny badacza.
+    \item[WN-05] Rozszerzalność -- dodanie nowego scenariusza, wariantu lub aplikacji nie wymaga zmian w~pozostałych modułach.
+    \item[WN-06] Wierność wariantu bazowego -- wariant bazowy odpowiada oryginalnej aplikacji i~nie jest celowo pogarszany.
+\end{itemize}
+
+% =====================================================================
+\subsection{Architektura rozwiązania}
+\label{sec:architektura}
+Architekturę środowiska badawczego przedstawiono na rysunku~\ref{fig:architektura}. System ma budowę modułową; jego elementy można podzielić na dwie grupy: elementy, z~którymi agent wchodzi w~interakcję (prawa część rysunku), oraz elementy wspierające prowadzenie badania, niewidoczne dla agenta (lewa część rysunku).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=7mm and 24mm,
+    box/.style={draw, rounded corners=2pt, align=center, text width=46mm, minimum height=11mm, font=\footnotesize},
+    agent/.style={box, fill=gray!15},
+    arr/.style={-{Stealth[length=2.2mm]}, thick},
+    lbl/.style={font=\scriptsize, align=center, fill=white, inner sep=1pt}
+]
+% prawa kolumna - elementy widoczne dla agenta
+\node[agent] (ag) {Agent przeglądarkowy\\Google Antigravity\\(\texttt{/browser})\\+ wybrany model językowy};
+\node[box, below=of ag] (chr) {Przeglądarka Chrome\\(odrębny profil)};
+\node[box, below=of chr] (app) {Aplikacja biurowa\\wariant bazowy /\\wariant przyjazny agentom};
+\node[box, below=of app] (api) {Lokalny serwer danych (API)};
+\node[box, below=of api] (db) {Baza danych\\(stan aplikacji)};
+% lewa kolumna - elementy badawcze
+\node[box, left=of ag] (sc) {Moduł scenariuszy\\(definicje zadań)};
+\node[box, left=of chr] (st) {Moduł sterujący\\przebiegiem badania};
+\node[box, left=of api] (wer) {Moduł weryfikacji stanu};
+\node[box, left=of db] (wyn) {Repozytorium wyników\\i~moduł analizy};
+
+\draw[arr] (ag) -- node[lbl, right]{akcje} (chr);
+\draw[arr] (chr) -- (app);
+\draw[arr] (app) -- node[lbl, right]{żądania HTTP} (api);
+\draw[arr] (api) -- (db);
+\draw[arr] (sc) -- (st);
+% polecenie i przywrocenie stanu prowadzone pionowo w odstepie miedzy kolumnami
+\coordinate (gap) at ($(st.east)!0.5!(chr.west)$);
+\draw[thick] (st.east) -- (gap);
+\draw[arr] (gap) |- node[lbl, pos=0.25]{polecenie} (ag.west);
+\draw[arr] (gap) |- node[lbl, pos=0.25]{przywrócenie\\stanu} ([yshift=2mm]api.west);
+\draw[arr] ([yshift=-2mm]api.west) -- node[lbl, below]{odczyt stanu} ([yshift=-2mm]wer.east);
+\draw[arr] (st) -- node[lbl, left]{wyzwolenie} (wer);
+\draw[arr] (wer) -- (wyn);
+
+\begin{scope}[on background layer]
+\node[draw, dashed, inner sep=3mm, fit=(ag)(db), label={[font=\scriptsize]above:elementy widoczne dla agenta}] {};
+\node[draw, dashed, inner sep=3mm, fit=(sc)(wyn), label={[font=\scriptsize]above:elementy wspierające badanie}] {};
+\end{scope}
+\end{tikzpicture}
+\caption{Architektura środowiska badawczego (opracowanie własne)}
+\label{fig:architektura}
+\end{figure}
+
+Poszczególne moduły pełnią następujące funkcje:
+\begin{itemize}
+    \item \textbf{Agent przeglądarkowy Google Antigravity} -- badany system; otrzymuje polecenie w~języku naturalnym i~wykonuje je, sterując przeglądarką. Jego konfiguracja (wersja środowiska, model językowy) jest rejestrowana dla każdego przebiegu.
+    \item \textbf{Aplikacja biurowa} -- otwartoźródłowy panel administracyjny uruchamiany lokalnie, w~każdym z~badanych wariantów interfejsu (podrozdziały~\ref{sec:aplikacje} i~\ref{sec:warianty}).
+    \item \textbf{Lokalny serwer danych i~baza danych} -- warstwa danych współdzielona przez wszystkie warianty interfejsu; stanowi źródło prawdy o~stanie aplikacji. Udostępnia dodatkowo niewidoczny dla agenta punkt końcowy służący do przywracania stanu początkowego i~odczytu pełnego stanu danych.
+    \item \textbf{Moduł scenariuszy} -- zbiór definicji zadań testowych (podrozdział~\ref{sec:scenariusze}).
+    \item \textbf{Moduł sterujący} -- realizuje procedurę pojedynczego przebiegu: przywraca stan początkowy, przekazuje polecenie agentowi, rejestruje czas, a~po zakończeniu zadania uruchamia weryfikację.
+    \item \textbf{Moduł weryfikacji stanu} -- porównuje stan danych po zakończeniu przebiegu ze stanem oczekiwanym (podrozdział~\ref{sec:weryfikacja-projekt}).
+    \item \textbf{Repozytorium wyników i~moduł analizy} -- przechowuje wyniki przebiegów i~umożliwia ich zestawianie oraz porównywanie wariantów (podrozdział~\ref{sec:procedura}).
+\end{itemize}
+
+Środowisko uruchomieniowe aplikacji i~warstwy danych zostanie zamknięte w~kontenerach (np. z~wykorzystaniem narzędzia Docker), co zapewni spełnienie wymagania powtarzalności WN-01. Agent Antigravity działa natomiast na komputerze badacza i~łączy się z~aplikacją poprzez adres lokalny.
+
+% =====================================================================
+\subsection{Wybór aplikacji biurowych}
+\label{sec:aplikacje}
+\subsubsection{Kryteria wyboru}
+Badane aplikacje powinny spełniać następujące kryteria:
+\begin{enumerate}
+    \item \textbf{Realizm} -- aplikacja odzwierciedla rzeczywisty system biurowy i~zawiera typowe elementy: nawigację, listy z~wyszukiwaniem, filtrowaniem i~stronicowaniem, formularze tworzenia i~edycji rekordów, zmiany statusów oraz okna modalne.
+    \item \textbf{Otwarta licencja} -- kod źródłowy jest dostępny na licencji pozwalającej na modyfikację na potrzeby badań.
+    \item \textbf{Możliwość lokalnego uruchomienia} -- aplikacja działa bez zależności od zewnętrznych usług, których stanu nie można kontrolować.
+    \item \textbf{Dostęp do stanu danych} -- możliwe jest programowe odczytanie i~przywrócenie stanu danych.
+    \item \textbf{Modyfikowalność interfejsu} -- komponenty interfejsu mogą być zastępowane bez ingerencji w~logikę aplikacji.
+    \item \textbf{Zróżnicowanie} -- wybrane aplikacje korzystają z~różnych bibliotek komponentów, co pozwala ocenić, czy obserwowane zależności mają charakter ogólny.
+\end{enumerate}
+
+\subsubsection{Analizowane aplikacje}
+Wstępnie przeanalizowano sześć otwartoźródłowych aplikacji typu panel administracyjny. Lista ta ma charakter otwarty i~może zostać rozszerzona. Zestawienie ich cech przedstawiono w~tabeli~\ref{tab:aplikacje}.
+
+\begin{table}[H]
+\centering
+\caption{Porównanie analizowanych otwartoźródłowych aplikacji biurowych (opracowanie własne na podstawie dokumentacji projektów)}
+\label{tab:aplikacje}
+\scriptsize
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{1.3cm}}
+\toprule
+\textbf{Aplikacja} & \textbf{Dziedzina} & \textbf{Biblioteka komponentów} & \textbf{Warstwa danych i~uwagi} & \textbf{Licencja} \\
+\midrule
+react-admin, przykład \textit{Posters Galore} \citep{reactadmin} & obsługa sklepu: zamówienia, klienci, produkty, recenzje & Material UI & dane generowane w~przeglądarce; wymienny moduł dostępu do danych umożliwia podłączenie lokalnego serwera & MIT \\
+\addlinespace
+refine, przykład \textit{finefoods-antd} \citep{refine} & obsługa dostaw żywności: zamówienia, produkty, kurierzy, sklepy & Ant Design & domyślnie zdalny serwer demonstracyjny; wymienny moduł dostępu do danych & MIT \\
+\addlinespace
+Twenty \citep{twenty} & system zarządzania relacjami z~klientami (CRM) & własna biblioteka komponentów & pełna część serwerowa z~bazą PostgreSQL; wysoki realizm, duża złożoność uruchomienia i~modyfikacji & AGPL-3.0 \\
+\addlinespace
+Saleor Dashboard \citep{saleor} & panel administracyjny sklepu internetowego & Macaw UI & wymaga uruchomienia systemu Saleor (interfejs GraphQL, PostgreSQL); duża złożoność & BSD-3-Clause \\
+\addlinespace
+shadcn-admin \citep{shadcnadmin} & szablon panelu: zadania, użytkownicy, aplikacje & shadcn/ui, Radix UI & dane statyczne; wymaga dodania warstwy danych & MIT \\
+\addlinespace
+TailAdmin \citep{tailadmin} & szablon panelu z~wykresami i~tabelami & Tailwind CSS & głównie widoki statyczne, ograniczona logika operacji na danych & MIT \\
+\bottomrule
+\end{tabularx}
+\end{table}
+% TODO (autor): potwierdzić licencje i stan projektów w dniu rozpoczęcia implementacji.
+
+\subsubsection{Wybór aplikacji do badań}
+Na podstawie przyjętych kryteriów w~pierwszej kolejności do badań przewidziano aplikacje \textbf{react-admin (Posters Galore)} oraz \textbf{refine (finefoods-antd)}. Obie zawierają pełny zestaw operacji tworzenia, odczytu, edycji i~usuwania danych na kilku powiązanych ze sobą zasobach, a~ich architektura przewiduje wymienny moduł dostępu do danych (ang. \textit{data provider}). Pozwala to zastąpić dane generowane w~przeglądarce lub zdalny serwer demonstracyjny lokalnym serwerem z~bazą danych, bez zmian w~warstwie prezentacji. Aplikacje te korzystają z~dwóch różnych, popularnych bibliotek komponentów (Material UI i~Ant Design), co umożliwi ocenę, czy obserwowane zależności nie są specyficzne dla jednej biblioteki. System Twenty, jako aplikacja o~najwyższym stopniu realizmu, rozważany jest jako rozszerzenie badań w~dalszym etapie. Szablony shadcn-admin i~TailAdmin, ze względu na brak rzeczywistej warstwy danych, mogą posłużyć co najwyżej jako źródło przykładów komponentów.
+% TODO (autor): ostateczny wybór aplikacji do potwierdzenia z promotorem.
+
+% =====================================================================
+\subsection{Warianty interfejsu}
+\label{sec:warianty}
+\subsubsection{Zasada konstruowania wariantów}
+Kluczowym elementem projektu jest możliwość uruchomienia tej samej aplikacji w~kilku wariantach interfejsu przy zachowaniu identycznej logiki i~danych:
+\begin{itemize}
+    \item \textbf{wariant bazowy} -- oryginalny interfejs aplikacji otwartoźródłowej, bez celowych modyfikacji (wymaganie WN-06); jedyną zmianą jest podłączenie lokalnej warstwy danych;
+    \item \textbf{wariant przyjazny agentom} -- ta sama funkcjonalność, w~której wybrane komponenty zmodyfikowano zgodnie z~hipotezami badawczymi;
+    \item opcjonalnie \textbf{warianty pośrednie} -- zawierające pojedynczą modyfikację, co pozwala określić wpływ każdego czynnika z~osobna.
+\end{itemize}
+
+Warianty implementowane są w~postaci alternatywnych wersji komponentów wybieranych na etapie budowania aplikacji. Każdy wariant udostępniany jest pod odrębnym portem lokalnym o~neutralnym oznaczeniu, a~tytuł strony i~pozostałe widoczne elementy nie zawierają informacji o~wariancie. Rozwiązanie to spełnia wymaganie WN-03: gdyby wariant był wskazywany np. parametrem w~adresie strony, agent mógłby go odczytać, co stanowiłoby potencjalne źródło zakłócenia eksperymentu.
+
+Lista modyfikacji wprowadzanych w~wariancie przyjaznym agentom nie jest ustalana w~całości z~góry. Zgodnie z~procedurą opisaną w~podrozdziale~\ref{sec:procedura} zostanie ona uzupełniona na podstawie analizy błędów popełnianych przez agenta w~wariancie bazowym. Punktem wyjścia są czynniki wskazane w~literaturze oraz kryteria WCAG, zestawione w~tabeli~\ref{tab:czynniki}.
+
+\begin{table}[H]
+\centering
+\caption{Badane czynniki i~przykładowe modyfikacje interfejsu (opracowanie własne na podstawie \citep{w3c2023wcag22, w3c2023aria12, li2024websuite})}
+\label{tab:czynniki}
+\scriptsize
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{1.3cm}>{\raggedright\arraybackslash}p{1.0cm}}
+\toprule
+\textbf{Czynnik} & \textbf{Przykład w~wariancie bazowym} & \textbf{Modyfikacja w~wariancie przyjaznym agentom} & \textbf{Kryterium WCAG} & \textbf{Hipoteza} \\
+\midrule
+Semantyka elementów akcji & element \texttt{div} z~obsługą kliknięcia & natywny element \texttt{button} lub \texttt{a} & 4.1.2 & H1 \\
+\addlinespace
+Nazwy elementów akcji & przycisk z~samą ikoną; ogólne etykiety ,,OK'', ,,Zapisz'' & dostępna nazwa opisująca operację, np. ,,Zapisz zamówienie'', ,,Usuń klienta Jan Kowalski'' & 2.4.6, 4.1.2 & H2 \\
+\addlinespace
+Etykiety pól formularza & tekst zastępczy zamiast etykiety; etykieta niepowiązana z~polem & element \texttt{label} powiązany z~polem; grupowanie pól (\texttt{fieldset}) & 1.3.1, 3.3.2 & H2, H3 \\
+\addlinespace
+Złożone komponenty & niestandardowa lista rozwijana z~wyszukiwaniem, kalendarz, przełącznik & element natywny (\texttt{select}, \texttt{input type="date"}) lub komponent zgodny z~wzorcami WAI-ARIA & 4.1.2 & H4 \\
+\addlinespace
+Komunikaty o~stanie & powiadomienie znikające po kilku sekundach; zmiana sygnalizowana wyłącznie kolorem & trwały komunikat z~rolą \texttt{status} lub \texttt{alert}; jawny tekst stanu & 4.1.3, 1.4.1 & H4 \\
+\addlinespace
+Nawigacja & zwinięte menu z~samymi ikonami; zagnieżdżone menu rozwijane & widoczne menu tekstowe w~elemencie \texttt{nav}, oznaczenie bieżącej strony & 2.4.x & H2 \\
+\addlinespace
+Tabele danych & siatka zbudowana z~elementów \texttt{div} & element \texttt{table} z~nagłówkami \texttt{th} lub siatka zgodna z~rolą \texttt{grid} & 1.3.1 & H1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Przykład pojedynczej modyfikacji przedstawiono na listingu~\ref{lst:wariant}. Oba fragmenty mogą zostać wyświetlone w~sposób wizualnie identyczny, jednak w~drzewie dostępności pierwszy z~nich nie jest widoczny jako element interaktywny i~nie posiada nazwy, natomiast drugi występuje jako przycisk o~nazwie ,,Usuń zamówienie nr 1024''.
+
+\begin{lstlisting}[language=HTML, caption={Przycisk usuwania w~wariancie bazowym (u~góry) i~w~wariancie przyjaznym agentom (u~dołu)}, label=lst:wariant, basicstyle=\ttfamily\footnotesize]
+<!-- wariant bazowy -->
+<div class="row-action" onclick="deleteOrder(1024)">
+  <svg class="icon-trash">...</svg>
+</div>
+
+<!-- wariant przyjazny agentom -->
+<button type="button" onclick="deleteOrder(1024)"
+        aria-label="Usuń zamówienie nr 1024">
+  <svg class="icon-trash" aria-hidden="true">...</svg>
+</button>
+\end{lstlisting}
+
+% =====================================================================
+\subsection{Scenariusze testowe}
+\label{sec:scenariusze}
+Scenariusz testowy jest jawną i~kompletną definicją zadania. Każdy scenariusz zawiera: identyfikator, nazwę, aplikację, poziom trudności, identyfikator stanu początkowego, polecenie dla agenta w~języku naturalnym oraz listę warunków poprawności. Polecenie jest identyczne dla wszystkich wariantów interfejsu i~nie zawiera wskazówek dotyczących sposobu wykonania zadania (np. nazw przycisków czy kolejności kroków), aby nie faworyzować żadnego z~wariantów. Przykładową definicję scenariusza przedstawiono na listingu~\ref{lst:scenariusz}.
+
+\begin{lstlisting}[language={}, caption={Przykładowa definicja scenariusza testowego}, label=lst:scenariusz, basicstyle=\ttfamily\footnotesize]
+id: RA-07
+nazwa: Zmiana statusu zamówienia
+aplikacja: react-admin-posters
+poziom: 2
+stan_poczatkowy: dane-01
+polecenie: >
+  W panelu administracyjnym dostępnym pod adresem
+  http://localhost:8101 znajdź zamówienie o numerze
+  referencyjnym ABC123 i zmień jego status na
+  "dostarczone".
+warunki:
+  - zasob: commands
+    filtr: { reference: "ABC123" }
+    oczekiwane: { status: "delivered" }
+dozwolone_zmiany:
+  - zasob: commands
+    filtr: { reference: "ABC123" }
+    pola: [status]
+\end{lstlisting}
+
+Scenariusze podzielono na trzy poziomy trudności:
+\begin{enumerate}
+    \item \textbf{Poziom 1 -- operacje elementarne}: pojedyncza operacja wymagająca niewielkiej liczby kroków, np. odnalezienie rekordu i~odczyt wartości, zmiana jednego pola.
+    \item \textbf{Poziom 2 -- operacje złożone}: operacje wymagające obsługi złożonych komponentów lub formularzy z~wieloma polami, np. utworzenie nowego klienta, zmiana statusu z~użyciem listy rozwijanej, ustawienie kilku filtrów.
+    \item \textbf{Poziom 3 -- operacje wieloetapowe i~warunkowe}: sekwencje kilku operacji na różnych zasobach lub zadania wymagające odczytania informacji i~podjęcia na jej podstawie decyzji, np. ,,znajdź klienta z~największą liczbą zamówień w~bieżącym miesiącu i~nadaj mu status VIP''.
+\end{enumerate}
+Zakłada się przygotowanie około 15--20 scenariuszy dla każdej badanej aplikacji, w~proporcjach zapewniających reprezentację wszystkich poziomów trudności oraz wszystkich czynników z~tabeli~\ref{tab:czynniki}.
+
+% =====================================================================
+\subsection{Mechanizm weryfikacji stanu}
+\label{sec:weryfikacja-projekt}
+Zgodnie z~wnioskami z~podrozdziału~\ref{sec:weryfikacja} ocena poprawności opiera się wyłącznie na programowej weryfikacji stanu danych, a~nie na deklaracjach agenta. Pojedyncza weryfikacja przebiega następująco:
+\begin{enumerate}
+    \item Przed rozpoczęciem przebiegu warstwa danych jest przywracana do stanu początkowego wskazanego w~scenariuszu, a~następnie zapisywana jest migawka pełnego stanu $S_0$.
+    \item Po zakończeniu przebiegu odczytywany jest stan końcowy $S_1$.
+    \item Sprawdzane są \textbf{warunki poprawności}: dla każdego warunku wyszukiwane są rekordy spełniające filtr i~porównywane wartości wskazanych pól z~wartościami oczekiwanymi. Obsługiwane są również warunki dotyczące utworzenia lub usunięcia rekordu oraz liczby rekordów.
+    \item Wyznaczany jest \textbf{zbiór różnic} pomiędzy $S_0$ i~$S_1$; każda różnica nieobjęta listą dozwolonych zmian traktowana jest jako niezamierzony skutek uboczny.
+    \item Przebieg uznaje się za zakończony sukcesem wtedy i~tylko wtedy, gdy spełnione są wszystkie warunki poprawności i~nie wystąpiły niezamierzone skutki uboczne.
+\end{enumerate}
+
+Kontrola skutków ubocznych stanowi rozszerzenie podejścia stosowanego w~środowisku WebArena, w~którym sprawdza się zasadniczo jedynie wystąpienie oczekiwanej zmiany. W~zastosowaniach biurowych przypadkowa modyfikacja innego rekordu (np. zmiana statusu niewłaściwego zamówienia obok właściwego) jest błędem równie poważnym jak niewykonanie zadania, dlatego nie może być pominięta w~ocenie.
+
+Niezależnie od wyniku weryfikacji rejestrowana jest deklaracja agenta dotycząca wykonania zadania. Zestawienie deklaracji z~wynikiem weryfikacji pozwala wyznaczyć odsetek przypadków, w~których agent błędnie uznał zadanie za wykonane -- zjawisko szczególnie istotne z~punktu widzenia zaufania do agentów w~zastosowaniach biurowych.
+
+% =====================================================================
+\subsection{Procedura badawcza i~metryki}
+\label{sec:procedura}
+\subsubsection{Przebieg pojedynczego zadania}
+Pojedynczy przebieg zadania obejmuje następujące kroki:
+\begin{enumerate}
+    \item przywrócenie stanu początkowego danych i~zapis migawki $S_0$,
+    \item uruchomienie nowej, niezależnej sesji agenta Antigravity z~wybranym modelem, aby wyeliminować wpływ wcześniejszych rozmów,
+    \item przekazanie agentowi polecenia ze scenariusza za pomocą polecenia \texttt{/browser},
+    \item oczekiwanie na zakończenie pracy agenta lub przekroczenie ustalonego limitu czasu,
+    \item zapis deklaracji agenta, czasu trwania oraz dostępnych zapisów przebiegu (zrzutów ekranu, nagrań, zapisu rozmowy),
+    \item uruchomienie weryfikacji stanu i~zapis wyniku.
+\end{enumerate}
+W~trakcie przebiegu badacz nie ingeruje w~pracę agenta. Jeżeli agent zwróci się z~prośbą o~doprecyzowanie lub potwierdzenie, odpowiedź udzielana jest według ustalonego z~góry schematu, a~fakt ten rejestrowany jest jako interwencja. Stopień automatyzacji kroków 2--5 zależy od możliwości udostępnianych przez środowisko Antigravity (np. interfejsu wiersza poleceń lub zestawu narzędzi programistycznych dla języka Python); w~przypadku ich niewystarczalności kroki te wykonywane będą przez badacza według ustalonej instrukcji, a~pozostałe kroki pozostaną zautomatyzowane.
+% TODO (autor): ustalić, czy uruchamianie agenta da się w pełni zautomatyzować (agy CLI / Antigravity SDK).
+
+\subsubsection{Cykl eksperymentalny}
+Badanie ma charakter iteracyjny, co przedstawiono na rysunku~\ref{fig:cykl}. Po wykonaniu wszystkich scenariuszy w~wariancie bazowym przeprowadzana jest analiza błędów agenta, na podstawie której formułowane są modyfikacje interfejsu. Następnie te same scenariusze wykonywane są w~wariancie zmodyfikowanym, a~wyniki porównywane są z~wynikami wariantu bazowego.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=14mm and 9mm,
+    etap/.style={draw, rounded corners=2pt, align=center, text width=36mm, minimum height=13mm, font=\footnotesize},
+    arr/.style={-{Stealth[length=2.2mm]}, thick}
+]
+\node[etap] (s1) {Wariant bazowy};
+\node[etap, right=of s1] (s2) {Seria przebiegów\\wszystkich scenariuszy};
+\node[etap, right=of s2] (s3) {Analiza i~klasyfikacja\\błędów agenta};
+\node[etap, below=of s3] (s4) {Hipotezy\\i~modyfikacje interfejsu};
+\node[etap, left=of s4] (s5) {Wariant zmodyfikowany\\i~ponowna seria\\przebiegów};
+\node[etap, left=of s5] (s6) {Porównanie wyników\\i~zalecenia projektowe};
+\draw[arr] (s1) -- (s2);
+\draw[arr] (s2) -- (s3);
+\draw[arr] (s3) -- (s4);
+\draw[arr] (s4) -- (s5);
+\draw[arr] (s5) -- (s6);
+\draw[arr, dashed] (s5.north) -- node[font=\scriptsize, right]{kolejna iteracja} (s2.south);
+\end{tikzpicture}
+\caption{Iteracyjny cykl eksperymentalny (opracowanie własne)}
+\label{fig:cykl}
+\end{figure}
+
+\subsubsection{Metryki}
+Podstawową metryką jest wskaźnik skuteczności realizacji zadań, wyznaczany dla danej konfiguracji agenta $a$ i~wariantu interfejsu $v$ jako:
+\begin{equation}
+    \mathrm{TSR}(a, v) = \frac{1}{N \cdot K} \sum_{i=1}^{N} \sum_{k=1}^{K} s_{i,k}(a, v),
+    \label{eq:tsr}
+\end{equation}
+\myequations{Wskaźnik skuteczności realizacji zadań}
+\noindent
+gdzie $N$ oznacza liczbę scenariuszy, $K$ -- liczbę powtórzeń każdego scenariusza, a~$s_{i,k}(a, v) \in \{0, 1\}$ -- wynik weryfikacji $k$-tego przebiegu $i$-tego scenariusza (1 -- sukces, 0 -- niepowodzenie).
+
+Wpływ modyfikacji interfejsu wyrażany jest jako różnica wskaźników skuteczności, podawana w~punktach procentowych:
+\begin{equation}
+    \Delta(a) = \mathrm{TSR}(a, v_{\mathrm{przyjazny}}) - \mathrm{TSR}(a, v_{\mathrm{bazowy}}).
+    \label{eq:delta}
+\end{equation}
+\myequations{Różnica skuteczności pomiędzy wariantami interfejsu}
+
+Ponieważ działanie agenta opartego na modelu językowym jest niedeterministyczne, każdy scenariusz wykonywany jest wielokrotnie (zakłada się $K \geq 3$), a~oprócz wartości wskaźnika podawany jest jego przedział ufności. Ze względu na to, że te same scenariusze wykonywane są w~obu wariantach, do oceny istotności statystycznej różnic zostanie zastosowany test dla prób zależnych (np. test McNemara).
+
+Metryki uzupełniające obejmują:
+\begin{itemize}
+    \item czas wykonania zadania,
+    \item liczbę kroków (akcji) agenta -- o~ile jest możliwa do ustalenia na podstawie zapisu przebiegu,
+    \item odsetek przebiegów z~niezamierzonymi skutkami ubocznymi,
+    \item odsetek fałszywych deklaracji sukcesu (agent zadeklarował wykonanie zadania, a~weryfikacja zakończyła się niepowodzeniem),
+    \item liczbę interwencji badacza,
+    \item stabilność wyników, rozumianą jako odsetek scenariuszy, w~których wszystkie powtórzenia zakończyły się tym samym wynikiem.
+\end{itemize}
+
+\subsubsection{Klasyfikacja błędów}
+Każdy nieudany przebieg jest analizowany na podstawie zapisu przebiegu i~przypisywany do jednej z~kategorii błędów: (1)~nieodnalezienie elementu interfejsu, (2)~wybór niewłaściwego elementu, (3)~nieprawidłowa obsługa komponentu (np. listy rozwijanej, kalendarza, okna modalnego), (4)~błąd nawigacji, (5)~błędna interpretacja stanu aplikacji (np. nieodczytanie komunikatu o~błędzie), (6)~błąd zrozumienia lub planowania zadania, (7)~przekroczenie limitu czasu lub zapętlenie. Kategorie 1--5 są potencjalnie zależne od konstrukcji interfejsu i~stanowią podstawę formułowania modyfikacji w~kolejnej iteracji; kategoria 6 dotyczy przede wszystkim możliwości modelu.
+
+\subsubsection{Model danych wyników}
+Wyniki przechowywane są zgodnie z~modelem danych przedstawionym w~tabeli~\ref{tab:model}, umożliwiającym zestawianie wyników w~przekroju wymaganym przez WF-06.
+
+\begin{table}[H]
+\centering
+\caption{Model danych wyników badania (opracowanie własne)}
+\label{tab:model}
+\footnotesize
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.4cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Encja} & \textbf{Najważniejsze atrybuty} \\
+\midrule
+KonfiguracjaAgenta & identyfikator, wersja środowiska Antigravity, model językowy, ustawienia \\
+Scenariusz & identyfikator, aplikacja, nazwa, poziom trudności, polecenie, stan początkowy \\
+WariantInterfejsu & identyfikator, aplikacja, opis modyfikacji, badane czynniki \\
+Przebieg & identyfikator, konfiguracja, scenariusz, wariant, numer powtórzenia, czas rozpoczęcia i~zakończenia, deklaracja agenta, liczba interwencji, wynik, kategoria błędu \\
+WynikWeryfikacji & identyfikator przebiegu, warunek, wartość oczekiwana, wartość rzeczywista, wynik; wykryte skutki uboczne \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\subsection{Hipotezy badawcze}
+\label{sec:hipotezy}
+Na podstawie analizy literatury sformułowano następujące hipotezy, które zostaną zweryfikowane z~wykorzystaniem zaprojektowanego środowiska:
+\begin{itemize}
+    \item[\textbf{H1}] Zastąpienie niestandardowych elementów interaktywnych semantycznymi elementami HTML o~identycznym wyglądzie zwiększa skuteczność agenta.
+    \item[\textbf{H2}] Jednoznaczne, opisowe nazwy elementów interaktywnych i~pól formularzy zwiększają skuteczność realizacji zadań.
+    \item[\textbf{H3}] Poprawne zastosowanie mechanizmów dostępności (etykiet, ról i~atrybutów ARIA) zwiększa skuteczność również w~przypadku agenta multimodalnego, jakim jest agent Antigravity.
+    \item[\textbf{H4}] Uproszczenie niestandardowych komponentów i~zapewnienie jawnych komunikatów o~stanie zmniejsza liczbę nieudanych zadań oraz fałszywych deklaracji sukcesu.
+    \item[\textbf{H5}] Wpływ modyfikacji interfejsu jest większy w~przypadku słabszych modeli językowych wykorzystywanych przez agenta.
+\end{itemize}
+
+Hipoteza H5 jest szczególnie istotna z~praktycznego punktu widzenia: jeżeli zostanie potwierdzona, oznaczać będzie, że odpowiednio zaprojektowana aplikacja pozwala na wykorzystanie tańszych i~szybszych modeli przy zachowaniu akceptowalnej skuteczności.
+
+% =====================================================================
+\subsection{Podsumowanie projektu}
+\label{sec:podsumowanie-projektu}
+Zaprojektowane środowisko łączy elementy, które w~istniejących rozwiązaniach występowały osobno: realistyczne aplikacje biurowe uruchamiane w~kontrolowanym środowisku (jak w~WebArena), dziedzinę zadań biurowych (jak w~WorkArena), powiązanie błędów agenta z~konstrukcją komponentów (jak w~WebSuite) oraz dbałość o~izolację zmiennych eksperymentu (jak w~BrowseComp-Plus). Elementem wyróżniającym jest uczynienie zmienną eksperymentu samej aplikacji, a~nie agenta, oraz wykorzystanie gotowego, komercyjnego agenta przeglądarkowego w~miejsce agenta budowanego przez badacza. Głównym produktem inżynierskim pracy jest środowisko wraz z~zestawem scenariuszy i~mechanizmem weryfikacji, umożliwiające rzetelny pomiar skuteczności agenta Google Antigravity niezależnie od tego, jak duże okażą się różnice pomiędzy wariantami interfejsu. Wyniki eksperymentów posłużą do sformułowania zaleceń projektowych dotyczących aplikacji przyjaznych agentom.
+
+% TODO: kolejne podrozdziały (implementacja) zostaną dodane po realizacji środowiska.

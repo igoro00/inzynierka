@@ -1,0 +1,193 @@
+\section{Przegląd literatury i istniejących rozwiązań}
+\label{chap:pierwszy}
+Rozdział stanowi techniczne wprowadzenie do zagadnienia skuteczności agentów przeglądarkowych. Omówiono w~nim podstawowe pojęcia, kierunki rozwoju agentów opartych na dużych modelach językowych, sposoby reprezentowania stron internetowych wykorzystywane przez takie systemy, a~także istniejące zestawy testów porównawczych i~metody weryfikacji poprawności wykonania zadań. Szczególną uwagę poświęcono związkom pomiędzy dostępnością cyfrową aplikacji a~skutecznością agentów, ponieważ to właśnie ten obszar wyznacza miejsce rozwiązania proponowanego w~niniejszej pracy. Rozdział kończy się zestawieniem porównawczym omówionych rozwiązań oraz wskazaniem luki, której wypełnienie stanowi przedmiot pracy.
+
+% =====================================================================
+\subsection{Podstawowe pojęcia}
+\label{sec:pojecia}
+
+\textbf{Agent} to w~klasycznym ujęciu sztucznej inteligencji system, który postrzega otoczenie za pomocą sensorów i~oddziałuje na nie za pomocą efektorów, dążąc do realizacji określonego celu \citep{russell2021aima}. W~kontekście niniejszej pracy otoczeniem agenta jest przeglądarka internetowa wraz z~wyświetlaną w~niej aplikacją, ,,sensorami'' są różne reprezentacje stanu strony (opisane w~podrozdziale~\ref{sec:reprezentacje}), a~,,efektorami'' -- akcje takie jak kliknięcie, wpisanie tekstu, przewinięcie strony czy przejście pod wskazany adres.
+
+\textbf{Duży model językowy} (ang. \textit{large language model}, LLM) to model statystyczny oparty zazwyczaj na architekturze transformatora, wytrenowany na bardzo dużym zbiorze tekstów, zdolny do generowania tekstu oraz -- po odpowiednim dostrojeniu -- do wykonywania poleceń i~wywoływania narzędzi. \textbf{Model multimodalny} rozszerza tę zdolność o~przetwarzanie innych modalności, w~szczególności obrazów, co pozwala mu bezpośrednio interpretować zrzuty ekranu. Przegląd architektur agentów budowanych na bazie dużych modeli językowych przedstawiono w~pracy \cite{wang2024survey}.
+
+\textbf{Agent przeglądarkowy} (nazywany również agentem internetowym, ang. \textit{web agent}) to system wykorzystujący model językowy lub multimodalny do samodzielnego wykonywania zadań w~przeglądarce internetowej na podstawie polecenia sformułowanego w~języku naturalnym. Działanie agenta przebiega w~pętli: obserwacja stanu strony, wnioskowanie o~kolejnym kroku, wykonanie akcji i~ponowna obserwacja. Schemat ten, łączący naprzemienne rozumowanie i~działanie, został spopularyzowany przez metodę ReAct \citep{yao2023react}. \textbf{Przeglądarką agentową} nazywa się natomiast gotowy produkt (aplikację lub usługę), w~którym agent przeglądarkowy jest dostępny dla użytkownika końcowego.
+
+\textbf{Zadanie} rozumiane jest w~pracy jako polecenie w~języku naturalnym (np. ,,zmień status zamówienia o~numerze X na dostarczone''), któremu odpowiada jednoznacznie określony docelowy stan aplikacji. \textbf{Wskaźnik skuteczności realizacji zadań} (ang. \textit{task success rate}, TSR) to odsetek zadań zakończonych osiągnięciem stanu docelowego. Jest to podstawowa miara stosowana w~większości omawianych dalej zestawów testów porównawczych.
+
+\textbf{Dostępność cyfrowa} to cecha aplikacji internetowej oznaczająca możliwość korzystania z~niej przez osoby o~różnych potrzebach, w~tym przez osoby z~niepełnosprawnościami posługujące się technologiami wspomagającymi, takimi jak czytniki ekranu. Podstawowym standardem w~tym zakresie są wytyczne WCAG \citep{w3c2023wcag22}. W~pracy przyjęto analogiczne pojęcie \textbf{dostępności dla agentów}, oznaczające cechy aplikacji ułatwiające jej poprawną obsługę przez agentów przeglądarkowych.
+
+% =====================================================================
+\subsection{Agenci przeglądarkowi oparci na dużych modelach językowych}
+\label{sec:agenci}
+
+\subsubsection{Rozwój podejść badawczych}
+Pierwsze systematyczne prace nad agentami obsługującymi interfejsy internetowe dotyczyły uczenia ze wzmocnieniem w~uproszczonych, syntetycznych środowiskach. Platforma World of Bits wraz z~zestawem MiniWoB \citep{shi2017wob}, rozszerzonym następnie do MiniWoB++ \citep{liu2018miniwob}, zawierała kilkadziesiąt, a~następnie ponad sto niewielkich zadań, takich jak kliknięcie przycisku o~określonej etykiecie, wypełnienie prostego formularza czy wybór daty w~kalendarzu. Środowisko WebShop \citep{yao2022webshop} przeniosło ten problem na grunt bardziej realistyczny -- symulowanego sklepu internetowego zawierającego ponad milion produktów -- w~którym agent musiał wyszukać i~zakupić towar spełniający opis słowny.
+
+Upowszechnienie dużych modeli językowych zmieniło sposób budowy agentów: zamiast trenować wyspecjalizowaną strategię dla każdego środowiska, wykorzystuje się model ogólnego przeznaczenia, któremu w~poleceniu przekazuje się opis zadania, tekstową reprezentację strony oraz listę dozwolonych akcji. Zbiór danych Mind2Web \citep{deng2023mind2web}, obejmujący ponad dwa tysiące zadań z~137 rzeczywistych witryn, pokazał, że już na etapie wyboru właściwego elementu strony z~bardzo długiego dokumentu HTML modele popełniają liczne błędy. Wraz z~pojawieniem się modeli multimodalnych powstały agenci operujący bezpośrednio na zrzutach ekranu, m.in. WebVoyager \citep{he2024webvoyager} oraz SeeAct \citep{zheng2024seeact}. Druga z~tych prac wykazała, że głównym ograniczeniem agentów wizualnych nie jest rozumienie zadania, lecz tzw. ugruntowanie (ang. \textit{grounding}), czyli powiązanie zamierzonej akcji z~konkretnym elementem interfejsu.
+
+Istotnym wnioskiem płynącym z~nowszych badań jest to, że sposób przedstawienia strony agentowi ma wpływ na skuteczność porównywalny z~wyborem samego modelu. Autorzy rozwiązania AgentOccam \citep{yang2025agentoccam} uzyskali znaczącą poprawę wyników w~środowisku WebArena wyłącznie poprzez uproszczenie przestrzeni obserwacji i~akcji, bez zmiany modelu językowego. Spostrzeżenie to ma bezpośrednie znaczenie dla niniejszej pracy: jeżeli uproszczenie reprezentacji strony po stronie agenta poprawia jego działanie, to uzasadnione jest pytanie, czy podobny efekt można uzyskać, zmieniając samą aplikację.
+
+\subsubsection{Komercyjne przeglądarki agentowe}
+Od 2024 roku agenci przeglądarkowi przestali być wyłącznie przedmiotem badań i~zaczęli pojawiać się w~produktach komercyjnych. Firma Anthropic udostępniła mechanizm sterowania komputerem (ang. \textit{computer use}), w~którym model na podstawie zrzutów ekranu generuje ruchy kursora i~naciśnięcia klawiszy \citep{anthropic2024computeruse}. OpenAI zaprezentowało model Computer-Using Agent, stanowiący podstawę usługi Operator \citep{openai2025cua}. Google DeepMind rozwija projekt Mariner \citep{google2024mariner}, a~w~październiku 2025 roku udostępniło wyspecjalizowany model Gemini 2.5 Computer Use, przeznaczony do sterowania przeglądarką na podstawie zrzutów ekranu \citep{google2025computeruse}.
+
+Wspólną cechą tych rozwiązań jest to, że użytkownik nie ma wpływu na wewnętrzną budowę agenta -- otrzymuje gotowy system, którego sposób postrzegania strony, dobór modelu i~strategia działania pozostają w~dużej mierze nieujawnione. Z~perspektywy twórcy aplikacji internetowej jest to sytuacja analogiczna do tej, w~jakiej znajduje się on wobec przeglądarek internetowych czy czytników ekranu: nie kontroluje programu klienckiego, a~jedynie strukturę dostarczanego dokumentu.
+
+\subsubsection{Agent przeglądarkowy w~środowisku Google Antigravity}
+\label{sec:antigravity}
+Google Antigravity to środowisko programistyczne nowej generacji, zaprezentowane przez Google w~listopadzie 2025 roku wraz z~rodziną modeli Gemini~3 \citep{google2025antigravityblog}. W~odróżnieniu od klasycznych asystentów programisty, środowisko to opiera się na agentach zdolnych do samodzielnego planowania i~wykonywania wieloetapowych zadań w~trzech obszarach: edytorze kodu, terminalu oraz przeglądarce internetowej.
+
+Obsługę przeglądarki realizuje wyspecjalizowany podagent przeglądarkowy, wywoływany m.in. poleceniem \texttt{/browser} \citep{google2025antigravitydocs}. Zgodnie z~dokumentacją producenta podagent ten steruje lokalną instancją przeglądarki Google Chrome uruchamianą z~odrębnym profilem użytkownika, działa we własnym kontekście rozmowy, odseparowanym od głównego agenta, a~przebieg jego pracy jest rejestrowany w~postaci zrzutów ekranu i~nagrań wideo. Środowisko umożliwia również ograniczenie zbioru adresów, które agent może odwiedzać. Użytkownik może wybrać model językowy, z~którego korzysta agent, co pozwala porównywać skuteczność tego samego narzędzia przy różnych modelach.
+% TODO (autor): zweryfikować powyższy opis z aktualną wersją dokumentacji Antigravity
+% (https://antigravity.google/docs/ide/browser) i uzupełnić o numer wersji używanej w badaniach.
+
+Szczegóły wewnętrznego działania agenta -- w~szczególności to, w~jakim stopniu wykorzystuje on zrzuty ekranu, a~w~jakim strukturę dokumentu lub drzewo dostępności -- nie są w~pełni udokumentowane publicznie. Z~tego powodu w~pracy agent Antigravity traktowany jest jako system typu ,,czarna skrzynka'': przedmiotem pomiaru jest wyłącznie jego zachowanie i~skuteczność w~zależności od konstrukcji obsługiwanej aplikacji. Wybór tego narzędzia uzasadniają trzy przesłanki: jest to aktualny, rozwijany produkt dużego dostawcy, udostępnia możliwość zmiany modelu bez zmiany pozostałych elementów systemu, a~sposób jego użycia odpowiada rzeczywistemu scenariuszowi, w~którym użytkownik końcowy zleca agentowi pracę w~aplikacji biurowej.
+
+% =====================================================================
+\subsection{Reprezentacje strony internetowej wykorzystywane przez agentów}
+\label{sec:reprezentacje}
+Agent przeglądarkowy nie ,,widzi'' strony tak jak człowiek; otrzymuje jedną lub kilka jej reprezentacji. Od wyboru reprezentacji zależy zarówno to, jakie informacje są dla agenta dostępne, jak i~to, które właściwości aplikacji mogą wpływać na jego skuteczność.
+
+\subsubsection{Obiektowy model dokumentu}
+Obiektowy model dokumentu (ang. \textit{Document Object Model}, DOM) to drzewiasta reprezentacja dokumentu HTML udostępniana przez przeglądarkę skryptom i~narzędziom zewnętrznym \citep{whatwg2025dom}. Przekazanie agentowi kodu HTML lub serializacji drzewa DOM zapewnia pełny dostęp do struktury strony, w~tym do atrybutów elementów, nazw klas i~identyfikatorów. Zasadniczym ograniczeniem tego podejścia jest rozmiar danych: według raportu WebAIM Million z~2025 roku przeciętna strona główna popularnej witryny zawiera ponad 1250 elementów \citep{webaim2025million}, a~w~rozbudowanych aplikacjach jednostronicowych liczba ta jest wielokrotnie większa. Drzewo DOM zawiera ponadto wiele elementów pozbawionych znaczenia dla użytkownika (kontenery układu, elementy dekoracyjne), a~nazwy klas generowane przez biblioteki stylów nie niosą informacji semantycznej. Dlatego agenci rzadko korzystają z~pełnego drzewa DOM i~zazwyczaj stosują jego filtrowanie lub uproszczenie \citep{deng2023mind2web}.
+
+\subsubsection{Drzewo dostępności}
+Drzewo dostępności (ang. \textit{accessibility tree}) to wyprowadzana przez przeglądarkę z~drzewa DOM reprezentacja przeznaczona pierwotnie dla technologii wspomagających. Każdy węzeł tego drzewa opisany jest przez \textbf{rolę} (np. przycisk, pole tekstowe, łącze, wiersz tabeli), \textbf{dostępną nazwę} (ang. \textit{accessible name}), \textbf{stan} (np. zaznaczony, rozwinięty, nieaktywny) oraz \textbf{wartość}. Role i~stany wynikają z~semantyki elementów HTML \citep{whatwg2025html} lub z~atrybutów WAI-ARIA \citep{w3c2023aria12}, a~sposób wyznaczania dostępnej nazwy -- na podstawie treści elementu, powiązanej etykiety, atrybutów \texttt{aria-label} i~\texttt{aria-labelledby} czy atrybutu \texttt{title} -- określa odrębna specyfikacja \citep{w3c2024accname}.
+
+Drzewo dostępności jest znacznie zwięźlejsze niż DOM i~zawiera dokładnie te informacje, które są potrzebne do obsługi interfejsu: jakie elementy są interaktywne, do czego służą i~w~jakim są stanie. Z~tego powodu stanowi ono podstawową reprezentację obserwacji w~środowisku WebArena \citep{zhou2024webarena} i~w~wielu innych rozwiązaniach. Jakość tej reprezentacji jest jednak w~całości zależna od twórcy aplikacji. Element \texttt{<div>} z~dołączoną obsługą zdarzenia kliknięcia nie posiada w~drzewie dostępności roli przycisku, a~przycisk zawierający wyłącznie ikonę graficzną nie posiada nazwy. Dla agenta korzystającego z~drzewa dostępności takie elementy są zatem niewidoczne lub nieodróżnialne od siebie, mimo że dla człowieka mogą być w~pełni czytelne.
+
+\subsubsection{Zrzuty ekranu i~podejście wizualne}
+Agenci wizualni otrzymują obraz wyrenderowanej strony, co pozwala im interpretować układ, ikony i~elementy graficzne w~sposób zbliżony do człowieka. Rozwiązanie to jest niezależne od jakości kodu HTML, lecz wprowadza inne trudności: konieczność precyzyjnego wskazania współrzędnych elementu, ograniczoną rozdzielczość, problem elementów znajdujących się poza widocznym obszarem oraz trudność w~odczytaniu stanów słabo wyróżnionych wizualnie. W~celu ograniczenia problemu ugruntowania stosuje się technikę oznaczania zbioru elementów (ang. \textit{Set-of-Mark}), polegającą na nałożeniu na zrzut ekranu numerowanych ramek wokół elementów interaktywnych \citep{yang2023som}. Ramki te wyznaczane są jednak zazwyczaj na podstawie drzewa DOM lub drzewa dostępności, co oznacza, że również agenci określani jako wizualni pośrednio korzystają ze struktury dokumentu \citep{he2024webvoyager, koh2024visualwebarena}.
+
+\subsubsection{Reprezentacje hybrydowe}
+Współczesne rozwiązania coraz częściej łączą powyższe reprezentacje: zrzut ekranu służy do zrozumienia kontekstu wizualnego, a~drzewo dostępności lub uproszczony DOM -- do jednoznacznej identyfikacji elementów i~wykonywania akcji. Taki model obserwacji oferuje m.in. platforma BrowserGym \citep{chezelles2025browsergym}. Zestawienie cech poszczególnych reprezentacji przedstawiono w~tabeli~\ref{tab:reprezentacje}.
+
+\begin{table}[H]
+\centering
+\caption{Porównanie reprezentacji strony internetowej wykorzystywanych przez agentów (opracowanie własne na podstawie \citep{zhou2024webarena, zheng2024seeact, chezelles2025browsergym})}
+\label{tab:reprezentacje}
+\footnotesize
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Reprezentacja} & \textbf{Zalety} & \textbf{Ograniczenia} & \textbf{Właściwości aplikacji wpływające na agenta} \\
+\midrule
+Drzewo DOM / kod HTML & pełna informacja o~strukturze i~atrybutach & bardzo duży rozmiar, wiele elementów bez znaczenia, brak informacji o~wyglądzie & struktura dokumentu, atrybuty, liczba zagnieżdżeń \\
+\addlinespace
+Drzewo dostępności & zwięzłość, jawne role, nazwy i~stany elementów & całkowita zależność od poprawności semantyki i~atrybutów ARIA & semantyka HTML, etykiety, atrybuty ARIA, komunikaty o~stanie \\
+\addlinespace
+Zrzut ekranu & niezależność od kodu, dostęp do informacji wizualnej & problem ugruntowania, ograniczony obszar widoczny, niejednoznaczne ikony & czytelność wizualna, rozmieszczenie elementów, widoczność stanów \\
+\addlinespace
+Hybrydowa & łączy kontekst wizualny z~jednoznaczną identyfikacją elementów & większy koszt obliczeniowy, możliwa niespójność reprezentacji & wszystkie powyższe \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Z~punktu widzenia niniejszej pracy najistotniejsze jest spostrzeżenie zawarte w~ostatniej kolumnie tabeli: niezależnie od przyjętej reprezentacji istnieją właściwości aplikacji, które twórca może kontrolować i~które potencjalnie wpływają na skuteczność agenta. Ponieważ sposób postrzegania strony przez agenta Antigravity nie jest w~pełni znany, badanie wpływu tych właściwości wymaga pomiaru empirycznego.
+
+% =====================================================================
+\subsection{Dostępność cyfrowa a~dostępność dla agentów}
+\label{sec:dostepnosc}
+
+\subsubsection{Standardy dostępności}
+Wytyczne WCAG 2.2 \citep{w3c2023wcag22} formułują wymagania dostępności w~oparciu o~cztery zasady: postrzegalność, funkcjonalność, zrozumiałość i~kompatybilność. Kilka kryteriów sukcesu tych wytycznych ma bezpośrednie odniesienie do problemów obserwowanych u~agentów przeglądarkowych:
+\begin{itemize}
+    \item kryterium 1.3.1 ,,Informacje i~relacje'' -- struktura i~powiązania między elementami (np. pole formularza i~jego etykieta, nagłówek tabeli i~komórka) muszą być określone programowo, a~nie wyłącznie wizualnie;
+    \item kryterium 2.4.6 ,,Nagłówki i~etykiety'' oraz 3.3.2 ,,Etykiety lub instrukcje'' -- elementy powinny posiadać etykiety opisujące ich przeznaczenie;
+    \item kryterium 4.1.2 ,,Nazwa, rola, wartość'' -- dla każdego komponentu interfejsu nazwa i~rola muszą być możliwe do ustalenia programowo, a~stany i~wartości -- do odczytania i~zmiany;
+    \item kryterium 4.1.3 ,,Komunikaty o~stanie'' -- komunikaty o~powodzeniu operacji, błędach czy postępie muszą być udostępniane technologiom wspomagającym bez konieczności przenoszenia na nie fokusu.
+\end{itemize}
+
+Uzupełnieniem WCAG jest specyfikacja WAI-ARIA \citep{w3c2023aria12}, definiująca role, stany i~właściwości umożliwiające opisanie niestandardowych komponentów (np. list rozwijanych z~wyszukiwaniem, okien modalnych, zakładek). Specyfikacja ta oraz towarzyszące jej zalecenia podkreślają jednak, że w~pierwszej kolejności należy korzystać z~natywnych elementów HTML posiadających wbudowaną semantykę, a~atrybuty ARIA stosować dopiero wtedy, gdy odpowiedni element natywny nie istnieje. Niepoprawne użycie ARIA może bowiem pogorszyć dostępność w~porównaniu z~jej brakiem.
+
+Mimo istnienia standardów poziom dostępności stron internetowych pozostaje niski. Według raportu WebAIM Million z~2025 roku automatycznie wykrywalne naruszenia WCAG występowały na 94,8\% spośród miliona najpopularniejszych stron głównych, a~do najczęstszych należały m.in. brak tekstu alternatywnego dla obrazów oraz brak etykiet pól formularzy \citep{webaim2025million}. Znaczenie dostępności rośnie również z~przyczyn prawnych: dyrektywa Parlamentu Europejskiego i~Rady (UE) 2019/882, stosowana od czerwca 2025 roku, rozszerzyła wymagania dostępności na wiele produktów i~usług sektora prywatnego \citep{ue2019eaa}.
+
+\subsubsection{Dostępność jako czynnik skuteczności narzędzi automatycznych}
+Związek między dostępnością a~możliwością automatycznej obsługi interfejsu jest od dawna wykorzystywany w~testowaniu oprogramowania. Biblioteka Testing Library zaleca, aby testy wyszukiwały elementy przede wszystkim po roli i~dostępnej nazwie, a~dopiero w~dalszej kolejności po etykiecie, tekście zastępczym czy identyfikatorze testowym, uzasadniając to tym, że testy powinny jak najwierniej odzwierciedlać sposób, w~jaki aplikacja jest używana \citep{testinglibrary2025priority}. Podobne zalecenie zawiera dokumentacja narzędzia Playwright, które jako preferowany sposób lokalizowania elementów wskazuje metody oparte na roli i~dostępnej nazwie \citep{playwright2025locators}. Aplikacja poprawnie zbudowana pod względem dostępności jest zatem łatwiejsza do obsługi przez programy automatyczne, a~agent przeglądarkowy -- w~odróżnieniu od skryptu testowego -- musi samodzielnie, bez wcześniejszej znajomości aplikacji, odnaleźć odpowiednie elementy.
+
+\subsubsection{Koncepcje interfejsów przeznaczonych dla agentów}
+W~2025 roku pojawiły się prace postulujące odwrócenie dotychczasowej perspektywy badań. \cite{lu2025awi} w~pracy o~znamiennym tytule ,,Build the web for agents, not agents for the web'' argumentują, że zamiast budować coraz bardziej złożonych agentów dostosowanych do interfejsów projektowanych dla ludzi, należy projektować interfejsy dostosowane do agentów. Autorzy proponują koncepcję agentowego interfejsu internetowego (ang. \textit{Agentic Web Interface}, AWI) i~formułują zasady jego projektowania, takie jak bezpieczeństwo, efektywność i~standaryzacja. Praca ma jednak charakter stanowiska (ang. \textit{position paper}) i~nie zawiera badań empirycznych wpływu konkretnych decyzji projektowych na skuteczność istniejących agentów.
+
+Równolegle w~ramach społeczności W3C rozwijana jest propozycja WebMCP \citep{w3c2025webmcp}, umożliwiająca stronie internetowej jawne udostępnienie agentowi zbioru narzędzi (funkcji opisanych w~języku naturalnym wraz ze schematem parametrów), dzięki którym agent może wykonywać operacje bez symulowania kliknięć. Propozycja ta nawiązuje do protokołu Model Context Protocol \citep{anthropic2024mcp}. Rozwiązania tego typu wymagają jednak wsparcia zarówno po stronie aplikacji, jak i~agenta, a~ich upowszechnienie jest kwestią przyszłości. W~okresie przejściowym agenci będą nadal obsługiwać aplikacje poprzez ich interfejs graficzny, dlatego zasadne jest badanie, w~jaki sposób konstrukcja tego interfejsu wpływa na skuteczność agentów.
+
+% =====================================================================
+\subsection{Istniejące zestawy testów porównawczych i~środowiska badawcze}
+\label{sec:benchmarki}
+W~niniejszym podrozdziale omówiono najważniejsze zestawy testów porównawczych służące do oceny agentów przeglądarkowych. Dla każdego z~nich wskazano zalety oraz ograniczenia z~perspektywy celu niniejszej pracy.
+
+\subsubsection{Środowiska syntetyczne: MiniWoB++ i~WebShop}
+MiniWoB++ \citep{liu2018miniwob} zawiera ponad sto niewielkich zadań realizowanych na sztucznie przygotowanych stronach, z~automatycznie wyznaczaną nagrodą. Zaletą zestawu jest pełna kontrola nad środowiskiem i~możliwość wyizolowania pojedynczych typów interakcji (np. obsługi kalendarza czy listy rozwijanej). Strony te są jednak bardzo uproszczone i~nie odzwierciedlają złożoności rzeczywistych aplikacji. WebShop \citep{yao2022webshop} oferuje bardziej realistyczny scenariusz sklepu internetowego, lecz ogranicza się do jednego typu zadania (wyszukanie i~zakup produktu).
+
+\subsubsection{Mind2Web}
+Mind2Web \citep{deng2023mind2web} to zbiór zadań zebranych na rzeczywistych witrynach wraz z~zapisanymi sekwencjami akcji wykonanych przez ludzi. Ocena odbywa się na podstawie wcześniej zapisanych migawek stron, bez interakcji z~działającą aplikacją -- poprzez porównanie akcji przewidzianych przez model z~zapisem wzorcowym na poziomie pojedynczych kroków. Zaletą jest duża różnorodność witryn; ograniczeniem -- brak obserwacji rzeczywistych skutków akcji agenta oraz to, że ocena kroków nie uwzględnia alternatywnych, równie poprawnych ścieżek wykonania zadania. Kontynuacja tej pracy, Online-Mind2Web \citep{xue2025illusion}, wykazała, że w~ocenie na rzeczywistych witrynach skuteczność wielu agentów jest wyraźnie niższa niż wynikałoby to z~wcześniej publikowanych rezultatów, co autorzy określili mianem ,,iluzji postępu''.
+
+\subsubsection{WebArena i~VisualWebArena}
+WebArena \citep{zhou2024webarena} jest pod względem ogólnej idei rozwiązaniem najbliższym niniejszej pracy. Środowisko składa się z~kilku samodzielnie uruchamianych, w~pełni funkcjonalnych aplikacji internetowych (sklepu internetowego, panelu administracyjnego systemu sklepu Magento, forum dyskusyjnego, systemu GitLab oraz serwisu mapowego), uzupełnionych o~narzędzia pomocnicze. Zestaw obejmuje 812 zadań, a~ich poprawność weryfikowana jest funkcjonalnie: poprzez porównanie odpowiedzi agenta z~odpowiedzią wzorcową lub przez programowe sprawdzenie stanu aplikacji (np. zapytanie do bazy danych lub odczyt zawartości strony) po zakończeniu zadania. W~pierwotnej publikacji najlepszy agent oparty na modelu GPT-4 osiągnął skuteczność 14,41\%, podczas gdy ludzie -- 78,24\%. VisualWebArena \citep{koh2024visualwebarena} rozszerza to podejście o~zadania wymagające rozumienia treści wizualnych.
+
+Z~perspektywy niniejszej pracy WebArena dostarcza dwóch kluczowych wzorców: wykorzystania realistycznych aplikacji uruchamianych w~kontrolowanym środowisku oraz weryfikacji opartej na stanie systemu. Jednocześnie różni się od niej w~sposób zasadniczy. W~WebArena agent jest budowany przez badacza według schematu: narzędzie automatyzacji przeglądarki $\rightarrow$ reprezentacja strony $\rightarrow$ model językowy $\rightarrow$ akcja $\rightarrow$ narzędzie automatyzacji przeglądarki. Przedmiotem oceny jest model lub architektura agenta, natomiast aplikacje pozostają niezmienne. Środowisko nie przewiduje tworzenia wariantów interfejsu ani nie formułuje zaleceń dla twórców aplikacji.
+
+\subsubsection{WorkArena i~platforma BrowserGym}
+WorkArena \citep{drouin2024workarena} to zestaw zadań realizowanych na platformie ServiceNow, czyli w~systemie klasy przedsiębiorstwa wykorzystywanym do obsługi procesów biurowych (zgłoszeń, katalogów usług, list i~formularzy). Jest to więc rozwiązanie najbliższe niniejszej pracy pod względem dziedziny zadań. Autorzy udostępnili również platformę BrowserGym \citep{chezelles2025browsergym}, ujednolicającą sposób definiowania środowisk, obserwacji i~akcji dla agentów przeglądarkowych. Podobnie jak WebArena, rozwiązanie to służy do porównywania agentów i~modeli, a~badana aplikacja (komercyjna platforma ServiceNow) nie może być dowolnie modyfikowana przez badacza.
+
+\subsubsection{WebVoyager}
+WebVoyager \citep{he2024webvoyager} to agent multimodalny wraz z~zestawem 643 zadań realizowanych na 15 rzeczywistych, publicznie dostępnych witrynach. Zaletą jest realistyczny charakter interakcji i~pełne, wieloetapowe zadania. Ograniczeniem -- brak kontroli nad testowanymi witrynami: ich treść i~wygląd zmieniają się w~czasie, co obniża powtarzalność wyników. Ponieważ stanu zewnętrznych serwisów nie można odczytać, poprawność zadań oceniana jest przez ludzi lub automatycznie przez model multimodalny analizujący zrzuty ekranu, co wprowadza element subiektywności.
+
+\subsubsection{WebSuite}
+WebSuite \citep{li2024websuite} jest zestawem diagnostycznym, którego celem nie jest wyznaczenie łącznej skuteczności agenta, lecz ustalenie przyczyn jego niepowodzeń. Autorzy zaproponowali taksonomię akcji wykonywanych w~interfejsach internetowych i~przygotowali aplikację, w~której każde zadanie testuje pojedynczy typ akcji lub komponentu. Pozwala to wskazać konkretne elementy interfejsu, z~którymi agenci mają trudności. Praca ta stanowi ważną inspirację dla części eksperymentalnej niniejszej pracy, ponieważ łączy niepowodzenia agentów z~konstrukcją interfejsu. Jej ograniczeniem jest skupienie na izolowanych komponentach -- zadania nie odzwierciedlają kompletnych, wieloetapowych scenariuszy w~realistycznej aplikacji biznesowej.
+
+\subsubsection{BrowseComp i~BrowseComp-Plus}
+BrowseComp \citep{wei2025browsecomp} obejmuje 1266 trudnych pytań, na które odpowiedź wymaga wytrwałego przeszukiwania sieci, przy czym poprawność odpowiedzi jest łatwa do sprawdzenia. Zestaw ten koncentruje się na wyszukiwaniu informacji, a~nie na wykonywaniu operacji w~aplikacjach. BrowseComp-Plus \citep{chen2025browsecompplus} zastępuje otwartą sieć stałym korpusem około 100 tysięcy dokumentów, co zwiększa powtarzalność i~pozwala oddzielić wpływ systemu wyszukiwania od wpływu modelu. Rozwiązanie to jest wartościowe metodologicznie -- pokazuje znaczenie kontrolowanego środowiska dla rzetelności pomiaru -- lecz nie dotyczy interakcji z~interfejsem użytkownika.
+
+\subsubsection{Inne środowiska}
+Warto wspomnieć również o~środowisku OSWorld \citep{xie2024osworld}, w~którym agenci wykonują zadania w~pełnym systemie operacyjnym, a~poprawność weryfikowana jest przez dedykowane skrypty sprawdzające stan aplikacji i~plików. Zakres tego środowiska wykracza poza przeglądarkę internetową, jednak przyjęta w~nim metoda weryfikacji jest zbieżna z~metodą proponowaną w~niniejszej pracy.
+
+% =====================================================================
+\subsection{Metody weryfikacji poprawności wykonania zadań}
+\label{sec:weryfikacja}
+Na podstawie przeglądu literatury można wyróżnić cztery podstawowe metody oceny, czy agent poprawnie wykonał zadanie:
+\begin{enumerate}
+    \item \textbf{Porównanie odpowiedzi} -- stosowane w~zadaniach informacyjnych; odpowiedź agenta porównywana jest z~wzorcową w~sposób dokładny lub przybliżony (np. BrowseComp, część zadań WebArena). Metoda nie nadaje się do zadań polegających na zmianie stanu aplikacji.
+    \item \textbf{Porównanie ze ścieżką wzorcową} -- akcje agenta porównywane są z~zapisem akcji wykonanych przez człowieka (Mind2Web). Metoda nie uwzględnia alternatywnych poprawnych ścieżek i~nie potwierdza, że zamierzony efekt rzeczywiście nastąpił.
+    \item \textbf{Ocena przez człowieka lub przez model} -- człowiek lub model multimodalny ocenia przebieg zadania na podstawie zrzutów ekranu i~deklaracji agenta (WebVoyager, Online-Mind2Web). Metoda jest uniwersalna, lecz kosztowna lub podatna na błędy oceniającego modelu.
+    \item \textbf{Programowa weryfikacja stanu} -- po zakończeniu zadania skrypt sprawdza rzeczywisty stan aplikacji, np. zawartość bazy danych (WebArena, WorkArena, OSWorld). Metoda jest obiektywna i~powtarzalna, lecz wymaga pełnej kontroli nad środowiskiem oraz przygotowania procedury sprawdzającej dla każdego zadania.
+\end{enumerate}
+
+Szczególnie istotny jest problem rozbieżności między deklaracją agenta a~rzeczywistym stanem systemu. Agent może zakomunikować wykonanie zadania, mimo że zmiana nie została zapisana (np. formularz nie został zatwierdzony lub operacja została odrzucona z~powodu niepoprawnych danych), albo może wykonać zadanie poprawnie, lecz dodatkowo zmodyfikować inne rekordy. Wiarygodną ocenę zapewnia zatem jedynie programowa weryfikacja stanu, uzupełniona o~sprawdzenie braku niezamierzonych zmian. To podejście przyjęto w~niniejszej pracy.
+
+% =====================================================================
+\subsection{Zestawienie istniejących rozwiązań i~luka badawcza}
+\label{sec:luka}
+Zestawienie omówionych rozwiązań pod kątem kryteriów istotnych dla celu pracy przedstawiono w~tabeli~\ref{tab:porownanie}.
+
+\begin{table}[H]
+\centering
+\caption{Porównanie istniejących zestawów testów porównawczych z~rozwiązaniem proponowanym w~pracy (opracowanie własne)}
+\label{tab:porownanie}
+\scriptsize
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{1.9cm}>{\raggedright\arraybackslash}p{1.5cm}}
+\toprule
+\textbf{Rozwiązanie} & \textbf{Badane aplikacje} & \textbf{Kontrolowane środowisko} & \textbf{Metoda weryfikacji} & \textbf{Przedmiot oceny} & \textbf{Warianty interfejsu} \\
+\midrule
+MiniWoB++ & syntetyczne strony z~pojedynczymi zadaniami & tak & programowa (nagroda) & agent & nie \\
+WebShop & symulowany sklep internetowy & tak & programowa (zgodność atrybutów) & agent & nie \\
+Mind2Web & 137 rzeczywistych witryn (zapisane migawki) & częściowo & zgodność ze ścieżką wzorcową & model & nie \\
+WebArena, VisualWebArena & samodzielnie uruchamiane aplikacje (sklep, panel administracyjny, forum, GitLab) & tak & odpowiedź i~programowa weryfikacja stanu & agent, model & nie \\
+WorkArena & platforma ServiceNow (system biurowy) & tak & programowa weryfikacja stanu & agent, model & nie \\
+WebVoyager & 15 rzeczywistych witryn & nie & ocena przez człowieka lub model & agent & nie \\
+WebSuite & aplikacja diagnostyczna z~izolowanymi komponentami & tak & programowa dla pojedynczych akcji & przyczyny błędów agenta & nie \\
+BrowseComp & otwarta sieć & nie & porównanie odpowiedzi & agent (wyszukiwanie) & nie \\
+BrowseComp-Plus & stały korpus dokumentów & tak & porównanie odpowiedzi & agent i~system wyszukiwania & nie \\
+\midrule
+\textbf{Rozwiązanie proponowane} & \textbf{otwartoźródłowe panele administracyjne} & \textbf{tak} & \textbf{programowa weryfikacja stanu wraz z~kontrolą skutków ubocznych} & \textbf{aplikacja (interfejs)} & \textbf{tak} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Analiza literatury prowadzi do następujących wniosków:
+\begin{enumerate}
+    \item Istniejące zestawy testów porównawczych odpowiadają przede wszystkim na pytania o~to, który model lub agent jest skuteczniejszy oraz jak ulepszyć agenta, aby lepiej radził sobie z~istniejącymi stronami. Badane aplikacje traktowane są jako niezmienne tło eksperymentu.
+    \item Rozwiązania o~największej rzetelności pomiaru (WebArena, WorkArena, OSWorld) wymagają budowy własnego agenta lub integracji z~określonym interfejsem programistycznym i~nie odzwierciedlają sytuacji użytkownika gotowej przeglądarki agentowej.
+    \item Jedynym spośród omówionych rozwiązań łączącym niepowodzenia agentów z~konstrukcją interfejsu jest WebSuite, lecz dotyczy ono izolowanych komponentów, a~nie kompletnych scenariuszy w~realistycznych aplikacjach.
+    \item Postulat projektowania interfejsów pod kątem agentów \citep{lu2025awi} nie został dotychczas poparty badaniami empirycznymi wskazującymi, które konkretne decyzje projektowe wpływają na skuteczność istniejących agentów i~w~jakim stopniu.
+    \item Zbieżność kryteriów WCAG (w~szczególności 1.3.1, 4.1.2 i~4.1.3) z~typowymi przyczynami błędów agentów sugeruje, że praktyki dostępności cyfrowej mogą jednocześnie zwiększać dostępność aplikacji dla agentów. Hipoteza ta wymaga jednak weryfikacji, szczególnie w~odniesieniu do agentów multimodalnych, które teoretycznie mogłyby radzić sobie z~interfejsem wyłącznie na podstawie obrazu.
+\end{enumerate}
+
+Luką badawczą, której wypełnienie stanowi przedmiot niniejszej pracy, jest zatem brak środowiska i~metody pozwalających w~kontrolowany sposób mierzyć wpływ konstrukcji interfejsu realistycznej aplikacji biurowej na skuteczność gotowego, komercyjnego agenta przeglądarkowego. Rozwiązanie wypełniające tę lukę powinno łączyć: realistyczne aplikacje biurowe, gotowego agenta traktowanego jako czarna skrzynka, powtarzalne scenariusze testowe, programową weryfikację stanu, kontrolowane warianty tego samego interfejsu oraz możliwość sformułowania na podstawie wyników zaleceń dla twórców aplikacji. Projekt takiego rozwiązania przedstawiono w~rozdziale~\ref{chap:drugi}.

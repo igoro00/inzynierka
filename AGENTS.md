@@ -1,14 +1,18 @@
 # Podsumowanie projektu
 
+> **Zasada dla agenta AI (ważne):**
+> 1. Za każdym razem, gdy użytkownik zmienia założenia projektu, podejmuje nowe decyzje architektoniczne/technologiczne lub modyfikuje koncepcję, należy **od razu zaktualizować ten plik (`AGENTS.md`)**, tak aby zawsze stanowił aktualne źródło prawdy o projekcie.
+> 2. W formalnych dokumentach pracy inżynierskiej (takich jak `zakres.md`) należy unikać zapożyczeń z języka angielskiego, anglicyzmów (np. *benchmark*, *webowy*, *walidacja*, *ewaluacja*) oraz kolokwializmów (np. *ułatwiają pracę*, *zawodzą*, *żmudne*) — stosować wyłącznie formalną polszczyznę akademicką (np. *zestaw testów porównawczych*, *internetowy*, *weryfikacja*, *ocena*).
+
 ## 1. Ogólna idea projektu
 
 Celem pracy inżynierskiej jest zbadanie, w jaki sposób projekt aplikacji webowej wpływa na skuteczność działania przeglądarek agentowych oraz opracowanie praktycznych zasad tworzenia aplikacji bardziej dostępnych dla takich systemów.
 
 Projekt składa się z trzech głównych elementów:
 
-1. stworzenia przykładowej biznesowej aplikacji webowej,
-2. testowania na niej przeglądarek agentowych dostępnych na rynku,
-3. eksperymentalnego modyfikowania aplikacji tak, aby nawet słabsze agenty mogły skutecznie wykonywać zadania.
+1. wykorzystania i adaptacji open-source'owych przykładów biurowych aplikacji webowych (w szczególności typu „admin dashboard”),
+2. testowania na nich agenta przeglądarkowego w **Antigravity** (komenda `/browser`),
+3. eksperymentalnego modyfikowania interfejsu aplikacji tak, aby agent (w tym przy użyciu słabszych modeli) mógł skutecznie i niezawodnie wykonywać zadania.
 
 Kluczowa idea nie polega na ulepszaniu modelu AI ani na budowie własnego agenta. Badana jest druga strona interakcji, czyli sama aplikacja webowa.
 
@@ -18,7 +22,7 @@ Główne pytanie projektu:
 
 ## 2. Bardzo ważne założenie
 
-W projekcie NIE powstaje własna przeglądarka agentowa.
+W projekcie NIE powstaje własna przeglądarka agentowa ani nie piszemy aplikacji biurowej od zera.
 
 Nie należy implementować rozwiązania typu:
 
@@ -26,39 +30,50 @@ Playwright → DOM/accessibility tree → LLM → decyzja → Playwright.
 
 Tak działają między innymi klasyczne benchmarki akademickie, jednak nie jest to przedmiot tej pracy.
 
-Projekt powinien korzystać z gotowych przeglądarek agentowych i produktów dostępnych na rynku.
+Projekt korzysta z **Antigravity (komenda `/browser`)** jako gotowego narzędzia agentowego oraz z istniejących, open-source'owych aplikacji biurowych / „admin dashboard”.
 
 Schemat interakcji jest zatem następujący:
 
 ```text
-Gotowa przeglądarka agentowa
+Antigravity (/browser)
           |
           | normalna interakcja webowa
           v
-Nasza aplikacja testowa
+Open-source'owa aplikacja biurowa / Admin Dashboard
           |
           v
-Backend
+Backend / warstwa danych
           |
           v
-Baza danych
+Baza danych / stan aplikacji
 ```
 
-Backend aplikacji stanowi źródło prawdy pozwalające sprawdzić, czy agent faktycznie poprawnie wykonał zadanie.
+Backend / warstwa danych aplikacji stanowi źródło prawdy pozwalające sprawdzić, czy agent faktycznie poprawnie wykonał zadanie.
 
 ## 3. Tematyka pracy
 
-Preferowana krótka wersja: **Badanie dostępności aplikacji webowych dla przeglądarek agentowych**
+**Zgłoszony, oficjalny temat pracy inżynierskiej (11 słów):**
+> **Weryfikacja skuteczności agenta przeglądarkowego Google Antigravity przy realizacji zadań w systemach biurowych**
+
+Wcześniej rozważane robocze warianty tytułu:
+
+- **Weryfikacja skuteczności agenta przeglądarkowego podczas obsługi wybranych systemów biurowych** (9 słów)
+- **Weryfikacja skuteczności agenta AI w obsłudze wybranych webowych systemów biurowych** (10 słów)
+- **Weryfikacja skuteczności agenta przeglądarkowego przy realizacji zadań w wybranych systemach biurowych** (11 słów)
+- **Weryfikacja skuteczności agenta Google Antigravity w obsłudze wybranych systemów biurowych** (10 słów)
+- **Badanie skuteczności autonomicznego agenta AI podczas obsługi wybranych systemów biurowych** (10 słów)
 
 Alternatywy rozważane wcześniej:
 
+- Badanie dostępności aplikacji webowych dla przeglądarek agentowych
 - Projekt i analiza aplikacji webowej dla przeglądarek agentowych
 - Ocena wpływu interfejsu aplikacji na skuteczność przeglądarek agentowych
 - Projektowanie aplikacji webowych przyjaznych przeglądarkom agentowym
 - Metody zwiększania dostępności aplikacji webowych dla agentów AI
-- Projekt aplikacji webowej do testowania przeglądarek agentowych
 
 Temat ma mieścić się maksymalnie w 13 słowach.
+
+**Dane formalne:** autor — Igor Ordecha (nr albumu 251601), promotor — dr inż. Łukasz Chomątek; Politechnika Łódzka, Wydział FTIMS, kierunek Informatyka Stosowana, Instytut Informatyki I72; rok na stronie tytułowej: 2027.
 
 ## 4. Problem inżynierski
 
@@ -87,11 +102,13 @@ Problem można streścić następująco:
 
 ## 5. Cel pracy
 
-Cel pracy:
+Główny, bezpieczny cel inżynierski (w pełni osiągalny i niezależny od tego, jak duże okażą się wzrosty skuteczności w eksperymentach):
 
-> Zaprojektowanie i implementacja aplikacji webowej umożliwiającej testowanie przeglądarek agentowych oraz analizę wpływu struktury interfejsu użytkownika na skuteczność wykonywania zadań przez agentów.
+> Zaprojektowanie i stworzenie rzetelnego benchmarku (środowiska testowego opartego na otwartoźródłowych aplikacjach biurowych i automatycznej walidacji stanu po stronie serwera) pozwalającego mierzyć skuteczność agenta przeglądarkowego Google Antigravity (`/browser`) w zadaniach biurowych.
 
-Drugim istotnym rezultatem ma być stworzenie praktycznych rekomendacji projektowych wynikających z eksperymentów.
+Opracowany benchmark posłuży następnie do zbadania, czy i w jakim stopniu zmiany w budowie interfejsu aplikacji ułatwiają agentowi pracę, oraz do sformułowania wniosków i rekomendacji projektowych.
+
+> **Ważna uwaga pragmatyczna:** Definiujemy główny cel jako **zaprojektowanie rzetelnego benchmarku**, aby uniknąć pułapki uzależnienia sukcesu pracy inżynierskiej od tego, czy modyfikacje UI zawsze przyniosą spektakularną poprawę wyników agenta. Sam rzetelny benchmark z powtarzalnymi scenariuszami i obiektywną walidacją stanowi główny produkt inżynierski.
 
 ## 6. Główny wkład autorski
 
@@ -131,46 +148,39 @@ Należy omówić:
 
 Szczególną uwagę należy zwrócić na to, że większość istniejących rozwiązań ocenia agentów zamiast aplikacji.
 
-## 7.2. Projekt i implementacja aplikacji webowej
+## 7.2. Wybór i adaptacja open-source'owych aplikacji biurowych (typu „admin dashboard”)
 
-Należy stworzyć przykładową aplikację biznesową.
+Zamiast tworzyć sztuczną aplikację od zera, w pracy wykorzystane zostaną gotowe, open-source'owe przykłady aplikacji biurowych / **admin dashboard** (np. systemy CRM, panele administracyjne, back-office).
 
-Powinna przypominać realistyczny system SaaS / biznesowy, a nie zestaw sztucznych komponentów.
+Wstępnie znalezione przykłady open-source (**lista ma charakter otwarty — nie zamykamy się wyłącznie na te 6 pozycji**):
 
-Powinna zawierać między innymi:
+1. **react-admin (demo — Poster Galore)**: https://github.com/marmelab/react-admin/tree/master/examples/demo
+2. **refine (finefoods-antd)**: https://github.com/refinedev/refine/tree/main/examples/finefoods-antd
+3. **Twenty CRM**: https://github.com/twentyhq/twenty
+4. **Saleor Dashboard**: https://github.com/saleor/saleor-dashboard
+5. **shadcn-admin**: https://github.com/satnaing/shadcn-admin
+6. **TailAdmin (free-react-tailwind-admin-dashboard)**: https://github.com/TailAdmin/free-react-tailwind-admin-dashboard
 
-- logowanie,
-- nawigację,
-- listy danych,
-- wyszukiwanie,
-- filtrowanie,
-- formularze,
-- tworzenie danych,
-- edycję danych,
-- usuwanie danych,
-- zmianę statusów,
-- operacje wieloetapowe,
-- ewentualnie dashboard.
+Wybrane aplikacje reprezentują realistyczne systemy biurowe i obejmują typowe operacje:
 
-Aplikacja powinna posiadać frontend, backend oraz bazę danych.
+- logowanie i nawigację,
+- listy danych, wyszukiwanie i filtrowanie,
+- formularze, tworzenie, edycję i usuwanie danych,
+- zmianę statusów i operacje wieloetapowe,
+- widoki dashboardowe.
 
-## 7.3. Integracja z przeglądarkami agentowymi
+## 7.3. Testowanie przy użyciu Antigravity (`/browser`)
 
-Ten punkt został w rozmowie skorygowany.
-
-Nie tworzymy własnego agenta.
+Nie tworzymy własnego agenta ani nie testujemy wielu różnych przeglądarek zewnętrznych — **testujemy wyłącznie Antigravity (poprzez komendę `/browser`)**.
 
 Zakres obejmuje:
 
-- wybór kilku przeglądarek agentowych dostępnych na rynku,
-- przygotowanie aplikacji w taki sposób, aby mogły się z nią normalnie łączyć,
-- uruchamianie identycznych scenariuszy w różnych przeglądarkach,
-- zbieranie wyników,
-- weryfikację skuteczności poprzez backend aplikacji.
+- wykorzystanie wbudowanego agenta przeglądarkowego w Antigravity (`/browser`),
+- lokalne uruchomienie wybranej aplikacji (lub zestawu aplikacji) open-source w kontrolowanym środowisku,
+- uruchamianie powtarzalnych scenariuszy testowych w Antigravity (`/browser`),
+- zbieranie wyników oraz weryfikację skuteczności (sprawdzenie stanu danych / backendu aplikacji).
 
-Przeglądarki agentowe należy traktować jako zewnętrzne systemy typu black-box.
-
-Interesuje nas ich zachowanie, a nie ich wewnętrzna implementacja.
+Agenta przeglądarkowego Antigravity traktujemy jako system typu black-box — interesuje nas jego zachowanie i skuteczność w zależności od konstrukcji UI aplikacji.
 
 ## 8. Scenariusze testowe
 
@@ -526,8 +536,8 @@ Projekt odpowiada na inne pytanie:
 
 Brakuje obecnie podejścia łączącego jednocześnie:
 
-- realistyczną aplikację biznesową,
-- gotowe przeglądarki agentowe,
+- realistyczną aplikację biurową (typu admin dashboard),
+- gotowego agenta przeglądarkowego (Antigravity `/browser`),
 - kontrolowane zadania,
 - backendową walidację,
 - warianty tego samego UI,
@@ -542,35 +552,34 @@ Ogólny UML / diagram komponentów:
 
 ```text
 +-----------------------------------+
-| Przeglądarki agentowe             |
-| Agent Browser 1                   |
-| Agent Browser 2                   |
-| Agent Browser N                   |
+| Przeglądarka agentowa             |
+| Antigravity (komenda /browser)    |
 +------------------+----------------+
                    |
                    | wykonanie zadania
                    v
 +-----------------------------------+
-| Aplikacja testowa web             |
+| Aplikacja biurowa web             |
+| (Open-source Admin Dashboard)     |
 |                                   |
 | - interfejs użytkownika           |
 | - warianty UI                     |
-| - logika biznesowa frontend       |
+| - logika aplikacji frontend       |
 +------------------+----------------+
                    |
                    v
 +-----------------------------------+
-| Backend                           |
+| Backend / warstwa danych          |
 |                                   |
-| - API                             |
-| - logika biznesowa                |
+| - API / data provider             |
+| - logika aplikacji                |
 | - zarządzanie scenariuszami       |
 | - walidacja wyników               |
 +------------------+----------------+
                    |
                    v
 +-----------------------------------+
-| Baza danych                       |
+| Baza danych / stan aplikacji      |
 +-----------------------------------+
 
           ^
@@ -597,13 +606,13 @@ Ogólny UML / diagram komponentów:
 
 ## 18. Moduły systemu
 
-## Aplikacja biznesowa
+## Aplikacja biurowa (Open-source Admin Dashboard)
 
-Główny system używany przez agentów.
+Główny system używany przez agenta.
 
-## Backend
+## Backend / warstwa danych
 
-Zarządza danymi i logiką biznesową.
+Zarządza danymi i logiką aplikacji.
 
 ## Baza danych
 
@@ -611,19 +620,19 @@ Przechowuje rzeczywisty stan aplikacji.
 
 ## Scenariusze testowe
 
-Opisują zadania, które mają wykonywać agenty.
+Opisują zadania, które ma wykonywać agent.
 
 ## Moduł walidacji
 
-Sprawdza stan backendu po wykonaniu zadania.
+Sprawdza stan backendu / danych po wykonaniu zadania.
 
 ## Moduł wyników / benchmarku
 
 Przechowuje:
 
-- nazwę agenta,
+- konfigurację agenta (Antigravity `/browser` + użyty model),
 - scenariusz,
-- wariant UI,
+- aplikację / wariant UI,
 - rezultat,
 - czas,
 - dodatkowe metryki.
@@ -633,7 +642,7 @@ Przechowuje:
 Pozwala porównywać:
 
 ```text
-agent × zadanie × wariant UI
+model/konfiguracja Antigravity × zadanie × wariant UI
 ```
 
 ## Moduł analizy
@@ -684,14 +693,12 @@ Nie jest to ustalona architektura klas, lecz propozycja modelu danych.
 
 ## 20. Istotna decyzja implementacyjna
 
-Najlepiej nie tworzyć osobnych aplikacji dla każdego eksperymentu.
-
-Lepsze podejście:
+Najlepiej opierać eksperymenty na kontrolowanych wariantach tych samych widoków / komponentów w wybranej aplikacji biurowej (dashboardzie) open-source:
 
 ```text
-jedna logika biznesowa
+jedna logika aplikacji (ten sam dashboard open-source)
 +
-wiele wariantów frontendowych
+wiele wariantów frontendowych (baseline vs zmodyfikowany UI)
 ```
 
 Przykład:
@@ -702,10 +709,11 @@ Przykład:
 /customer/edit?variant=agent-friendly
 ```
 
+(lub osobne branche / flagi konfiguracyjne w wybranej aplikacji open-source).
+
 Dzięki temu:
 
-- backend pozostaje identyczny,
-- dane pozostają identyczne,
+- backend / dane początkowe pozostają identyczne,
 - scenariusz pozostaje identyczny,
 - jedyną zmienną eksperymentu jest UI.
 
@@ -717,31 +725,31 @@ Warto zaprojektować przynajmniej dwa podstawowe warianty.
 
 ## Baseline
 
-Typowa współczesna aplikacja webowa.
+Oryginalna wersja wybranej aplikacji biurowej open-source typu admin dashboard (lub jej standardowe komponenty).
 
 Może zawierać między innymi:
 
 - ikony bez opisów,
-- custom controls,
+- custom controls z bibliotek UI (np. Ant Design, MUI, Radix/shadcn),
 - niejednoznaczne etykiety,
 - placeholdery zamiast label,
 - dynamiczne komponenty,
 - rozbudowane modale.
 
-Nie powinna być celowo zepsuta. Ma być realistycznym UI.
+Nie powinna być celowo zepsuta. Ma być realistycznym UI pochodzącym z prawdziwego projektu open-source.
 
 ## Agent-friendly
 
-Ta sama funkcjonalność, ale zoptymalizowana na podstawie hipotez.
+Ta sama funkcjonalność w tym samym dashboardzie, ale zoptymalizowana na podstawie hipotez.
 
 Przykładowo:
 
 - semantyczny HTML,
-- poprawne etykiety,
+- poprawne etykiety i atrybuty ARIA,
 - jednoznaczne action labels,
 - bardziej przewidywalna nawigacja,
 - czytelne komunikaty o zmianie stanu,
-- ograniczenie niestandardowych widgetów.
+- uproszczenie lub ulepszenie dostępności niestandardowych widgetów.
 
 Opcjonalnie może powstać również trzeci wariant pośredni.
 
@@ -751,7 +759,7 @@ Możliwe hipotezy:
 
 ### H1
 
-Semantyczne elementy HTML zwiększają skuteczność przeglądarek agentowych względem wizualnie identycznych elementów niestandardowych.
+Semantyczne elementy HTML zwiększają skuteczność przeglądarki agentowej względem wizualnie identycznych elementów niestandardowych.
 
 ### H2
 
@@ -759,7 +767,7 @@ Jednoznaczne etykiety elementów interaktywnych zwiększają skuteczność wykon
 
 ### H3
 
-Poprawne wykorzystanie mechanizmów accessibility zwiększa skuteczność nie tylko agentów tekstowych, ale także produktów multimodalnych.
+Poprawne wykorzystanie mechanizmów accessibility zwiększa skuteczność również w przypadku agenta multimodalnego (Antigravity `/browser`).
 
 ### H4
 
@@ -767,7 +775,7 @@ Uproszczenie niestandardowych komponentów i dynamicznych interakcji zmniejsza l
 
 ### H5
 
-Wpływ zmian UI jest szczególnie zauważalny w przypadku słabszych agentów/modeli.
+Wpływ zmian UI jest szczególnie zauważalny w przypadku słabszych modeli używanych przez agenta.
 
 Ostatnia hipoteza jest szczególnie zgodna z pierwotnym założeniem projektu: aplikacja ma być na tyle dostępna, aby nawet słabsze modele mogły sobie z nią radzić.
 
@@ -775,23 +783,23 @@ Ostatnia hipoteza jest szczególnie zgodna z pierwotnym założeniem projektu: a
 
 Etap 1:
 
-Implementacja aplikacji biznesowej.
+Wybór i uruchomienie open-source'owych aplikacji biurowych (typu „admin dashboard”).
 
 Etap 2:
 
-Przygotowanie zestawu scenariuszy.
+Przygotowanie zestawu scenariuszy testowych.
 
 Etap 3:
 
-Implementacja backendowych validatorów.
+Implementacja mechanizmu walidacji stanu po wykonaniu zadania.
 
 Etap 4:
 
-Testowanie baseline UI przy użyciu kilku przeglądarek agentowych.
+Testowanie baseline UI przy użyciu Antigravity (komenda `/browser`).
 
 Etap 5:
 
-Analiza błędów.
+Analiza błędów popełnianych przez agenta.
 
 Etap 6:
 
@@ -799,11 +807,11 @@ Opracowanie hipotez dotyczących zmian UI.
 
 Etap 7:
 
-Implementacja zmodyfikowanych wersji komponentów.
+Implementacja zmodyfikowanych wersji komponentów (wariant agent-friendly) w badanych aplikacjach.
 
 Etap 8:
 
-Ponowne wykonanie identycznych scenariuszy.
+Ponowne wykonanie identycznych scenariuszy w Antigravity (`/browser`).
 
 Etap 9:
 
@@ -817,6 +825,8 @@ Opracowanie rekomendacji agent-friendly web design.
 
 Aby nie rozszerzyć niepotrzebnie zakresu pracy:
 
+- nie pisać całej aplikacji biurowej od zera (korzystamy z gotowych projektów open-source typu admin dashboard, nie zamykając się na stałą listę przykładów),
+- nie testować wielu różnych przeglądarek agentowych (skupiamy się wyłącznie na Antigravity `/browser`),
 - nie trenować własnych modeli językowych,
 - nie fine-tunować LLM,
 - nie budować własnej przeglądarki agentowej,
@@ -827,7 +837,7 @@ Aby nie rozszerzyć niepotrzebnie zakresu pracy:
 
 Praca ma skupić się na:
 
-> kontrolowanej aplikacji + gotowych agentach + modyfikacjach UI + pomiarze efektu.
+> open-source'owych aplikacjach biurowych (admin dashboard) + agencie Antigravity (`/browser`) + modyfikacjach UI + pomiarze efektu.
 
 ## 25. Najważniejsza wartość projektu
 
@@ -837,7 +847,7 @@ Najbardziej interesujący rezultat nie brzmi:
 
 Znacznie wartościowszy rezultat brzmi:
 
-> „Po zmianie sposobu implementacji formularzy skuteczność wszystkich testowanych agentów wzrosła średnio z 58% do 83%, a największy wzrost wystąpił w przypadku słabszego agenta.”
+> „Po zmianie sposobu implementacji formularzy i tabel w badanej aplikacji biurowej open-source skuteczność agenta Antigravity (`/browser`) wzrosła z 58% do 83%, a największy wzrost wystąpił przy zastosowaniu słabszego modelu.”
 
 To pokazuje bezpośrednią wartość pracy.
 
@@ -845,16 +855,16 @@ To pokazuje bezpośrednią wartość pracy.
 
 Po zakończeniu projektu powinny istnieć:
 
-1. działająca aplikacja biznesowa,
+1. skonfigurowane środowisko oparte na open-source'owych aplikacjach biurowych (typu admin dashboard),
 2. zestaw scenariuszy testowych,
-3. mechanizm backendowej walidacji,
-4. możliwość testowania wielu przeglądarek agentowych,
-5. co najmniej dwa warianty interfejsu,
+3. mechanizm walidacji stanu aplikacji / backendu,
+4. procedura testowania w Antigravity (`/browser`),
+5. co najmniej dwa warianty interfejsu (baseline z projektu open-source oraz wariant agent-friendly),
 6. wyniki eksperymentów,
-7. analiza błędów agentów,
+7. analiza błędów agenta,
 8. porównanie skuteczności wariantów,
 9. zestaw praktycznych rekomendacji dotyczących projektowania aplikacji przyjaznych agentom.
 
 ## 27. Jednozdaniowy opis projektu dla kolejnego agenta
 
-> Należy zbudować kontrolowaną biznesową aplikację webową, testować na niej istniejące rynkowe przeglądarki agentowe, automatycznie weryfikować wykonywane przez nie zadania poprzez backend, eksperymentalnie modyfikować UI i semantykę aplikacji oraz na podstawie różnic w skuteczności opracować zasady projektowania aplikacji webowych przyjaznych agentom AI.
+> Należy wykorzystać open-source'owe aplikacje biurowe (typu „admin dashboard”), testować na nich agenta przeglądarkowego Antigravity (komenda `/browser`), automatycznie weryfikować wykonywane przez niego zadania na podstawie stanu danych/backendu, eksperymentalnie modyfikować UI i semantykę tych aplikacji oraz na podstawie różnic w skuteczności opracować zasady projektowania aplikacji webowych przyjaznych agentom AI.
